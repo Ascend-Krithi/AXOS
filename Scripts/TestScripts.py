@@ -1,4 +1,7 @@
-{Import necessary modules}
+import asyncio
+from Pages.LoginPage import LoginPage
+from Pages.RuleConfigurationPage import RuleConfigurationPage
+from Pages.RuleManagementPage import RuleManagementPage
 
 class TestLoginFunctionality:
     def __init__(self, page):
@@ -12,4 +15,52 @@ class TestLoginFunctionality:
 
     async def test_remember_me_functionality(self):
         await self.login_page.navigate()
-        await self.login_page.fill_email('
+        await self.login_page.fill_email('...')
+
+class TestRuleConfiguration:
+    def __init__(self, page):
+        self.page = page
+        self.rule_config_page = RuleConfigurationPage(page)
+        self.rule_mgmt_page = RuleManagementPage(page)
+
+    async def test_define_rule_with_multiple_conditions_and_deposit_simulation(self):
+        # TC-FT-003: Define a rule with balance >= 1000 and source = 'salary'
+        await self.rule_config_page.navigate()
+        rule_name = "SalaryDepositRule"
+        conditions = [
+            {"field": "balance", "operator": ">=", "value": 1000},
+            {"field": "source", "operator": "==", "value": "salary"}
+        ]
+        trigger_type = "deposit"
+        action_type = "notify"
+        await self.rule_config_page.create_rule(rule_name, conditions, trigger_type, action_type)
+        assert await self.rule_config_page.get_success_message() == "Rule created successfully"
+
+        # Simulate deposit with balance = 900, source = 'salary' (expect NOT executed)
+        await self.rule_mgmt_page.navigate()
+        await self.rule_mgmt_page.simulate_deposit(amount=900, source="salary")
+        assert not await self.rule_mgmt_page.is_rule_executed(rule_name)
+
+        # Simulate deposit with balance = 1200, source = 'salary' (expect executed)
+        await self.rule_mgmt_page.simulate_deposit(amount=1200, source="salary")
+        assert await self.rule_mgmt_page.is_rule_executed(rule_name)
+
+    async def test_rule_submission_missing_trigger_and_unsupported_action(self):
+        # TC-FT-004: Submit a rule with missing trigger type (expect error)
+        await self.rule_config_page.navigate()
+        rule_name = "InvalidTriggerRule"
+        conditions = [{"field": "balance", "operator": ">=", "value": 500}]
+        trigger_type = None
+        action_type = "notify"
+        await self.rule_config_page.create_rule(rule_name, conditions, trigger_type, action_type)
+        error_msg = await self.rule_config_page.get_error_message()
+        assert error_msg == "Trigger type is required"
+
+        # Submit a rule with unsupported action type (expect error)
+        rule_name = "UnsupportedActionRule"
+        conditions = [{"field": "balance", "operator": "==", "value": 100}]
+        trigger_type = "deposit"
+        action_type = "unsupported_action"
+        await self.rule_config_page.create_rule(rule_name, conditions, trigger_type, action_type)
+        error_msg = await self.rule_config_page.get_error_message()
+        assert error_msg == "Unsupported action type"
