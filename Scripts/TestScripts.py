@@ -47,7 +47,6 @@ class TestLoginFunctionality:
         login_page = LoginPage(driver, base_url)
         login_page.navigate_to_login()
         login_page.login_with_credentials(email="", password="")
-        # Wait for error messages to appear
         import time
         time.sleep(1)
         email_error = login_page.verify_error_message("Email required")
@@ -63,6 +62,28 @@ class TestLoginFunctionality:
         login_page = LoginPage(driver, base_url)
         result = login_page.test_remember_me_session_persistence(valid_email="user@example.com", valid_password="ValidPassword123")
         assert result is True
+
+    # TC_Login_07: Login without 'Remember Me', close and reopen browser, verify session expired.
+    @pytest.mark.asyncio
+    async def test_login_without_remember_me_session_expired(self):
+        driver = ... # Provide Selenium WebDriver instance
+        base_url = ... # Provide base URL
+        login_page = LoginPage(driver, base_url)
+        # Step 1: Login without 'Remember Me'
+        login_success = login_page.login_without_remember_me(email="user@example.com", password="ValidPassword123")
+        assert login_success is True
+        # Step 2: Close and reopen browser, verify session expired
+        session_expired = login_page.verify_session_expired_after_restart()
+        assert session_expired is True
+
+    # TC_LOGIN_001: Login with valid credentials, verify redirect to dashboard.
+    @pytest.mark.asyncio
+    async def test_login_and_verify_redirect(self):
+        driver = ... # Provide Selenium WebDriver instance
+        base_url = ... # Provide base URL
+        login_page = LoginPage(driver, base_url)
+        login_success = login_page.login_and_verify(email="user@example.com", password="ValidPassword123")
+        assert login_success is True
 
 class TestRuleConfiguration:
     @pytest.mark.asyncio
@@ -91,7 +112,6 @@ class TestRuleConfiguration:
     @pytest.mark.asyncio
     async def test_invalid_trigger_schema(self):
         rule_page = RuleConfigurationPage()
-        # TC_SCRUM158_05: Prepare a rule schema with an invalid trigger value
         schema = {
             'trigger': 'unknown_trigger',
             'conditions': [{'type': 'amount_above', 'value': 100}],
@@ -105,7 +125,6 @@ class TestRuleConfiguration:
     @pytest.mark.asyncio
     async def test_condition_missing_parameters_schema(self):
         rule_page = RuleConfigurationPage()
-        # TC_SCRUM158_06: Prepare a rule schema with a condition missing required parameters
         schema = {
             'trigger': 'amount_above',
             'conditions': [{'type': 'amount_above'}],  # missing 'value'
@@ -116,7 +135,6 @@ class TestRuleConfiguration:
         assert 'error' in result
         assert 'missing' in result['error'].lower() or 'incomplete' in result['error'].lower()
 
-    # TC_SCRUM158_07: Create rule with max conditions and actions
     @pytest.mark.asyncio
     async def test_create_rule_with_max_conditions_and_actions(self):
         rule_page = RuleConfigurationPage()
@@ -131,7 +149,6 @@ class TestRuleConfiguration:
         result = await rule_page.create_rule_with_max_conditions_and_actions(rule_id, rule_name, conditions, actions)
         assert result is True
 
-    # TC_SCRUM158_08: Create rule with empty conditions and actions
     @pytest.mark.asyncio
     async def test_create_rule_with_empty_conditions_and_actions(self):
         rule_page = RuleConfigurationPage()
@@ -141,7 +158,6 @@ class TestRuleConfiguration:
         assert isinstance(result_msg, str)
         assert "valid" in result_msg.lower() or "error" in result_msg.lower()
 
-    # TC_SCRUM158_09: Create rule with minimum required schema
     @pytest.mark.asyncio
     async def test_create_rule_with_minimum_required_schema(self):
         rule_page = RuleConfigurationPage()
@@ -153,7 +169,6 @@ class TestRuleConfiguration:
         assert isinstance(result_msg, str)
         assert "valid" in result_msg.lower() or "success" in result_msg.lower() or "error" in result_msg.lower()
 
-    # TC_SCRUM158_10: Create rule with unsupported trigger
     @pytest.mark.asyncio
     async def test_create_rule_with_unsupported_trigger(self):
         rule_page = RuleConfigurationPage()
