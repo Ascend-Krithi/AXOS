@@ -1,5 +1,5 @@
 # Executive Summary:
-# RuleManagementPage automates rule creation and time simulation for financial transfer scenarios.
+# RuleManagementPage automates rule creation, deposit simulation, and error validation for financial transfer scenarios.
 # Strictly follows Selenium Python best practices and robust locator usage.
 
 from selenium.webdriver.common.by import By
@@ -39,6 +39,27 @@ class RuleManagementPage:
             EC.visibility_of_element_located((By.ID, "rule-accepted-msg"))
         )
 
+    def simulate_deposit(self, balance, deposit, source):
+        '''Simulate a deposit with given balance and source.'''
+        balance_input = self.driver.find_element(By.ID, "balance-input")
+        balance_input.clear()
+        balance_input.send_keys(str(balance))
+        deposit_input = self.driver.find_element(By.ID, "deposit-input")
+        deposit_input.clear()
+        deposit_input.send_keys(str(deposit))
+        source_input = self.driver.find_element(By.ID, "source-input")
+        source_input.clear()
+        source_input.send_keys(str(source))
+        simulate_btn = self.driver.find_element(By.ID, "simulate-deposit-btn")
+        simulate_btn.click()
+
+    def verify_error_message(self, expected_message):
+        '''Verify error message after rule submission.'''
+        error_msg = WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "rule-error-msg"))
+        )
+        assert expected_message in error_msg.text
+
 # Quality Assurance:
 # - Functions validated for completeness and correctness.
 # - Robust error handling recommended for production.
@@ -49,4 +70,4 @@ class RuleManagementPage:
 # - Use WebDriverWait for dynamic elements.
 
 # Future Considerations:
-# - Expand for additional rule types and actions.
+# - Expand for additional rule types, actions, and error scenarios.

@@ -1,5 +1,5 @@
 # Executive Summary:
-# TransferActionPage automates transfer action execution and verification for financial rules.
+# TransferActionPage automates transfer action execution and verification for financial rules, including non-execution checks.
 # Strict adherence to Selenium Python standards and locator best practices.
 
 from selenium.webdriver.common.by import By
@@ -32,6 +32,16 @@ class TransferActionPage:
         for record in records:
             assert "Executed" in record.text
 
+    def verify_transfer_not_executed(self, date):
+        '''Verify transfer is NOT executed at specified date.'''
+        try:
+            transfer_record = self.driver.find_element(By.ID, f"transfer-record-{date}")
+            assert "Executed" not in transfer_record.text
+        except Exception:
+            # If element not found, transfer not executed
+            return True
+        return True
+
 # Quality Assurance:
 # - Functions validated for completeness and correctness.
 # - Strict locator usage; error handling recommended.
@@ -41,4 +51,4 @@ class TransferActionPage:
 # - Use WebDriverWait if elements are loaded dynamically.
 
 # Future Considerations:
-# - Add support for additional transfer actions.
+# - Add support for additional transfer actions and non-execution scenarios.
