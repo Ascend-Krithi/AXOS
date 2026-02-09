@@ -11,7 +11,7 @@ class TestLoginFunctionality:
 
     async def test_remember_me_functionality(self):
         await self.login_page.navigate()
-        await self.login_page.fill_email(''
+        await self.login_page.fill_email('')
 
     async def test_TC_Login_03_missing_email(self):
         """
@@ -53,3 +53,21 @@ class TestLoginFunctionality:
         expected_error = "Invalid credentials"
         result = self.login_page.validate_invalid_login(login_url, invalid_email, invalid_password, expected_error)
         assert result, f"Expected error message '{expected_error}' not shown for invalid credentials."
+
+    async def test_TC_Login_08_forgot_password_flow(self):
+        """
+        TC_Login_08: Navigate to login page, click 'Forgot Password', validate redirection to password recovery page.
+        """
+        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        result = self.login_page.validate_forgot_password_flow(login_url)
+        assert result, "User was not redirected to password recovery page after clicking 'Forgot Password'."
+
+    async def test_TC_Login_09_max_length_input(self):
+        """
+        TC_Login_09: Navigate to login page, enter max-length (255-character) email/username and valid password, click login, validate field acceptance and login outcome.
+        """
+        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        max_length_email = "a" * 255             # 255-character email
+        valid_password = "ValidPassword123"
+        result = self.login_page.validate_max_length_input(login_url, max_length_email, valid_password)
+        assert result, "Login failed or field did not accept maximum length input."
