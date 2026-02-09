@@ -104,3 +104,35 @@ class TestRuleConfiguration:
         await self.rule_mgmt_page.simulate_deposit(amount=500, source="generic")
         transferred_amount = await self.rule_mgmt_page.get_last_transfer_amount(existing_rule_name)
         assert transferred_amount == 50, f"Existing rule failed after unsupported rule type, got {transferred_amount}"
+
+    async def test_TC_SCRUM158_01_rule_schema_creation_and_validation(self):
+        # TC_SCRUM158_01: Prepare a valid rule schema with interval trigger, amount condition, and transfer action
+        schema = {
+            "trigger": {"type": "interval", "value": "daily"},
+            "conditions": [{"type": "amount", "operator": ">", "value": 100}],
+            "actions": [{"type": "transfer", "account": "A", "amount": 100}]
+        }
+        await self.rule_config_page.navigate()
+        await self.rule_config_page.create_rule_schema(schema)
+        schema_text = str(schema)
+        result_msg = await self.rule_config_page.submit_and_validate_schema(schema_text)
+        assert "success" in result_msg.lower() or "created" in result_msg.lower(), f"Expected schema acceptance, got: {result_msg}"
+
+    async def test_TC_SCRUM158_02_rule_schema_creation_and_validation(self):
+        # TC_SCRUM158_02: Prepare a schema with manual trigger, two conditions, and two actions
+        schema = {
+            "trigger": {"type": "manual"},
+            "conditions": [
+                {"type": "amount", "operator": ">", "value": 500},
+                {"type": "country", "operator": "==", "value": "US"}
+            ],
+            "actions": [
+                {"type": "transfer", "account": "B", "amount": 500},
+                {"type": "notify", "message": "Transfer complete"}
+            ]
+        }
+        await self.rule_config_page.navigate()
+        await self.rule_config_page.create_rule_schema(schema)
+        schema_text = str(schema)
+        result_msg = await self.rule_config_page.submit_and_validate_schema(schema_text)
+        assert "success" in result_msg.lower() or "created" in result_msg.lower(), f"Expected schema acceptance and storage of all conditions/actions, got: {result_msg}"
