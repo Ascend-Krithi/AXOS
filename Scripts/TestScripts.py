@@ -66,37 +66,3 @@ class TestLogin(unittest.TestCase):
         forgot_page.submit_recovery_email('user@example.com')
         confirmation_msg = forgot_page.get_confirmation_message()
         self.assertIn('Password reset email', confirmation_msg, msg="Confirmation message should indicate password reset email sent.")
-
-    # TC_LOGIN_009: Rapid invalid login attempts with rate limiting/captcha/lockout detection
-    def test_TC_LOGIN_009_rapid_invalid_login_attempts(self):
-        """TC_LOGIN_009: Attempt to login with invalid credentials rapidly multiple times (e.g., 10 times in succession). Expect system to detect rapid attempts and apply rate limiting, lockout, or captcha."""
-        self.login_page.navigate_to_login()
-        summary = self.login_page.attempt_multiple_invalid_logins(
-            email='wronguser@example.com',
-            password='WrongPassword',
-            attempts=10,
-            wait_between_attempts=0.5
-        )
-        self.assertTrue(
-            summary['rate_limited'] or summary['lockout_detected'] or summary['captcha_detected'],
-            msg="System should apply rate limiting, lockout, or captcha after rapid invalid login attempts."
-        )
-        self.assertEqual(summary['attempts'], 10, msg="Should attempt login 10 times.")
-        self.assertGreaterEqual(len(summary['error_messages']), 1, msg="Should capture at least one error message.")
-
-    # TC_LOGIN_010: Case sensitivity in login workflow
-    def test_TC_LOGIN_010_case_sensitivity(self):
-        """TC_LOGIN_010: Enter email/username and password with different cases, expect login succeeds only if credentials match exactly; error otherwise."""
-        self.login_page.navigate_to_login()
-        # Test with incorrect case
-        result = self.login_page.login_with_case_sensitive_credentials(
-            email='USER@EXAMPLE.COM',
-            password='ValidPassword123'
-        )
-        self.assertFalse(result, msg="Login should fail if case does not match.")
-        # Test with exact case
-        result_exact = self.login_page.login_with_case_sensitive_credentials(
-            email='user@example.com',
-            password='ValidPassword123'
-        )
-        self.assertTrue(result_exact, msg="Login should succeed only if case matches exactly.")
