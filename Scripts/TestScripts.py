@@ -1,11 +1,6 @@
-# Existing imports
-import json
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import pytest
+from Pages.LoginPage import LoginPage
 from Pages.RuleConfigurationPage import RuleConfigurationPage
-from selenium import webdriver
 
 class TestLoginFunctionality:
     def __init__(self, page):
@@ -22,27 +17,38 @@ class TestLoginFunctionality:
         await self.login_page.fill_email('')
 
 class TestRuleConfigurationNegativeCases:
-    def setup_method(self):
-        # Setup WebDriver for each test
-        self.driver = webdriver.Chrome()
-        self.rule_page = RuleConfigurationPage(self.driver)
+    def __init__(self, page):
+        self.page = page
+        self.rule_page = RuleConfigurationPage(page)
 
-    def teardown_method(self):
-        # Quit WebDriver after each test
-        self.driver.quit()
+    async def test_invalid_trigger_value(self):
+        """
+        TC_SCRUM158_05: Prepare schema with invalid trigger value, submit, assert error.
+        """
+        await self.rule_page.navigate_to_rule_configuration()
+        invalid_rule_schema = {
+            "name": "Invalid Trigger Rule",
+            "trigger": "INVALID_TRIGGER",  # Invalid trigger value
+            "conditions": [{"type": "status", "value": "active"}],
+            "actions": [{"type": "notify", "params": {"email": "test@example.com"}}]
+        }
+        await self.rule_page.fill_rule_schema(invalid_rule_schema)
+        await self.rule_page.submit_rule()
+        error_msg = await self.rule_page.get_error_message()
+        assert error_msg == "Invalid trigger value", f"Expected 'Invalid trigger value', got '{error_msg}'"
 
-    def test_tc_scrum158_05_invalid_trigger(self):
+    async def test_missing_condition_parameters(self):
         """
-        TC_SCRUM158_05: Prepare invalid trigger schema, validate, assert error message includes 'invalid value', submit, assert API returns 400 Bad Request.
+        TC_SCRUM158_06: Prepare schema with missing condition parameters, submit, assert error.
         """
-        self.rule_page.run_tc_scrum158_05()
-        error_message = self.rule_page.get_schema_error_message()
-        assert error_message is not None and 'invalid value' in error_message.lower(), 'Expected schema error for invalid trigger'
-
-    def test_tc_scrum158_06_incomplete_condition(self):
-        """
-        TC_SCRUM158_06: Prepare incomplete condition schema, validate, assert error message includes 'incomplete condition', submit, assert API returns 400 Bad Request.
-        """
-        self.rule_page.run_tc_scrum158_06()
-        error_message = self.rule_page.get_schema_error_message()
-        assert error_message is not None and 'incomplete condition' in error_message.lower(), 'Expected schema error for incomplete condition'
+        await self.rule_page.navigate_to_rule_configuration()
+        invalid_rule_schema = {
+            "name": "Missing Condition Params Rule",
+            "trigger": "ON_CREATE",
+            "conditions": [{"type": "status"}],  # Missing 'value' parameter
+            "actions": [{"type": "notify", "params": {"email": "test@example.com"}}]
+        }
+        await self.rule_page.fill_rule_schema(invalid_rule_schema)
+        await self.rule_page.submit_rule()
+        error_msg = await self.rule_page.get_error_message()
+        assert error_msg == "Condition parameters missing", f"Expected 'Condition parameters missing', got '{error_msg}'"
