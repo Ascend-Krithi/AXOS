@@ -62,5 +62,22 @@ class TestLogin(unittest.TestCase):
         session_persists = self.login_page.validate_session_persistence(self.base_url)
         self.assertTrue(session_persists, "Session should persist after browser restart when 'Remember Me' is checked.")
 
+    def test_TC09_special_character_login(self):
+        """TC09: Enter username and password with special characters, validate field acceptance and error message."""
+        self.login_page.navigate_to_login(self.base_url)
+        self.login_page.login_with_special_characters('user!@#', 'pass$%^&*')
+        # Expected error message for invalid special character credentials
+        expected_error = 'Invalid username or password'  # Update if needed
+        result = self.login_page.validate_error_for_special_characters(expected_error)
+        self.assertTrue(result, f"Error message should match '{expected_error}' for special character credentials.")
+
+    def test_TC10_network_failure_login(self):
+        """TC10: Simulate network/server error during login, validate error message."""
+        self.login_page.navigate_to_login(self.base_url)
+        self.login_page.simulate_network_failure_login('valid_user', 'ValidPass123')
+        expected_error = 'Unable to connect. Please try again later.'
+        result = self.login_page.validate_network_error(expected_error)
+        self.assertTrue(result, f"Error message should match '{expected_error}' for network/server error during login.")
+
 if __name__ == '__main__':
     unittest.main()
