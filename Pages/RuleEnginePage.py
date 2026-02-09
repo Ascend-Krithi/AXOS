@@ -5,6 +5,10 @@ class RuleEnginePage:
     """
     PageClass for rule definition and deposit simulation actions.
     Locators are placeholders and must be updated when UI details are available.
+    Supports:
+      - Percentage of deposit rules
+      - Fixed amount rules
+      - Currency conversion rules (future/new type)
     """
     # Locators (Placeholder - update when UI details available)
     DEFINE_RULE_BUTTON = (By.ID, "define-rule-btn")
@@ -23,19 +27,21 @@ class RuleEnginePage:
         self.driver = driver
 
     def open(self, url: str):
+        """Navigate to Rule Engine page."""
         self.driver.get(url)
 
     def define_rule(self, rule_data: dict):
         """
-        rule_data example:
+        Define a rule based on rule_data.
+        Example:
         {
             "trigger": {"type": "after_deposit"},
             "action": {"type": "percentage_of_deposit", "percentage": 10},
             "conditions": []
         }
+        Supports new types: currency_conversion, fixed_amount
         """
         self.driver.find_element(*self.DEFINE_RULE_BUTTON).click()
-        # Select rule type
         rule_type = rule_data.get("trigger", {}).get("type", "")
         self.driver.find_element(*self.RULE_TYPE_DROPDOWN).send_keys(rule_type)
         action = rule_data.get("action", {})
@@ -45,23 +51,25 @@ class RuleEnginePage:
         elif action.get("type") == "fixed_amount":
             self.driver.find_element(*self.FIXED_AMOUNT_INPUT).clear()
             self.driver.find_element(*self.FIXED_AMOUNT_INPUT).send_keys(str(action.get("amount", "")))
-        # Currency conversion
         if rule_type == "currency_conversion":
             self.driver.find_element(*self.CURRENCY_DROPDOWN).send_keys(rule_data.get("trigger", {}).get("currency", ""))
-        # Accept rule
         self.driver.find_element(*self.ACCEPT_RULE_BUTTON).click()
 
     def simulate_deposit(self, amount: int):
+        """Simulate deposit action."""
         self.driver.find_element(*self.DEPOSIT_INPUT).clear()
         self.driver.find_element(*self.DEPOSIT_INPUT).send_keys(str(amount))
         self.driver.find_element(*self.SIMULATE_DEPOSIT_BUTTON).click()
 
     def get_success_message(self):
+        """Return success message text."""
         return self.driver.find_element(*self.SUCCESS_MESSAGE).text
 
     def get_error_message(self):
+        """Return error message text."""
         return self.driver.find_element(*self.ERROR_MESSAGE).text
 
     def list_existing_rules(self):
+        """Return list of existing rules."""
         rules = self.driver.find_elements(*self.EXISTING_RULES_LIST)
         return [rule.text for rule in rules]
