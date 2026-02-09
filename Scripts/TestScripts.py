@@ -84,3 +84,44 @@ class TestRuleConfiguration:
         await self.rule_config_page.navigate()
         self.rule_config_page.define_rule_currency_conversion(rule_id, rule_name, currency, amount, schema_str)
         self.rule_config_page.verify_existing_rules_function()
+
+    # --- TC-FT-003: Rule with Multiple Conditions ---
+    async def test_rule_with_multiple_conditions(self):
+        rule_id = "TC-FT-003"
+        rule_name = "Multiple Conditions Rule"
+        trigger_type = "after_deposit"
+        action_type = "fixed_amount"
+        amount = 50
+        conditions = [
+            {"type": "balance_threshold", "operator": ">=", "value": 1000},
+            {"type": "transaction_source", "operator": "=", "transaction_source": "salary"}
+        ]
+        schema_str = '{"type": "object", "properties": {}}'
+        await self.rule_config_page.navigate()
+        self.rule_config_page.define_rule_with_multiple_conditions(rule_id, rule_name, trigger_type, action_type, amount, conditions, schema_str)
+
+        # Simulate deposit from 'salary' when balance is 900 (should NOT execute transfer)
+        self.rule_config_page.simulate_deposit(balance=900, deposit=100, source="salary")
+        self.rule_config_page.verify_transfer_not_executed()
+
+        # Simulate deposit from 'salary' when balance is 1200 (should execute transfer)
+        self.rule_config_page.simulate_deposit(balance=1200, deposit=100, source="salary")
+        self.rule_config_page.verify_transfer_executed()
+
+    # --- TC-FT-004: Error Handling ---
+    async def test_rule_missing_trigger(self):
+        rule_id = "TC-FT-004-MissingTrigger"
+        rule_name = "Missing Trigger Rule"
+        action_type = "fixed_amount"
+        amount = 100
+        schema_str = '{"type": "object", "properties": {}}'
+        await self.rule_config_page.navigate()
+        self.rule_config_page.submit_rule_missing_trigger(rule_id, rule_name, action_type, amount, schema_str)
+
+    async def test_rule_unsupported_action(self):
+        rule_id = "TC-FT-004-UnsupportedAction"
+        rule_name = "Unsupported Action Rule"
+        trigger_type = "specific_date"
+        schema_str = '{"type": "object", "properties": {}}'
+        await self.rule_config_page.navigate()
+        self.rule_config_page.submit_rule_unsupported_action(rule_id, rule_name, trigger_type, schema_str)
