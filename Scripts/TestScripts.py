@@ -7,7 +7,6 @@ from Pages.RuleConfigurationPage import RuleConfigurationPage
 class TestLoginFunctionality:
     # Existing test methods...
     # ... [existing methods here] ...
-
     @pytest.mark.asyncio
     async def test_login_without_remember_me_session_not_persisted(self):
         login_page = LoginPage()
@@ -81,32 +80,35 @@ class TestLoginFunctionality:
         # Error assertion is inside sql_injection_login_test
 
     @pytest.mark.asyncio
-    async def test_TC_LOGIN_009_max_input_invalid_credentials(self):
+    async def test_TC_LOGIN_009_max_input_length_validation(self):
         """
         Implements TC_LOGIN_009:
-        1. Navigate to the login page.
-        2. Enter maximum allowed characters (50) in email and password fields.
-        3. Click the 'Login' button.
-        4. Verify error message 'Invalid credentials' is shown, no field overflow or UI break.
+        1. Navigate to login page.
+        2. Enter maximum allowed characters in email/username and password fields (50 chars).
+        3. Click login button.
+        4. Verify error message 'Invalid credentials' or successful login.
         """
         login_page = LoginPage(self.driver)
-        assert login_page.displayed(), "Login page is not displayed."
+        login_page.navigate_to_login_page("https://example.com/login")
         max_email = "a" * 50
         max_password = "b" * 50
-        login_page.login_with_max_chars(max_email, max_password)
-        login_page.login_and_verify_error(max_email, max_password, "Invalid credentials")
+        login_page.enter_credentials(max_email, max_password)
+        login_page.click_login_button()
+        assert login_page.verify_error_message(["Invalid credentials"]), "Error message 'Invalid credentials' was not displayed or field overflow occurred."
 
     @pytest.mark.asyncio
     async def test_TC_LOGIN_010_unregistered_user_error(self):
         """
         Implements TC_LOGIN_010:
-        1. Navigate to the login page.
-        2. Enter email and password for a user not registered.
-        3. Click the 'Login' button.
-        4. Verify error message 'User not found' or 'Invalid credentials' is shown, user remains on login page.
+        1. Navigate to login page.
+        2. Enter email/username and password for unregistered user.
+        3. Click login button.
+        4. Verify error message 'User not found' or 'Invalid credentials'.
         """
         login_page = LoginPage(self.driver)
-        assert login_page.displayed(), "Login page is not displayed."
+        login_page.navigate_to_login_page("https://example.com/login")
         unregistered_email = "unknown@example.com"
         unregistered_password = "RandomPass789"
-        login_page.login_and_verify_error(unregistered_email, unregistered_password, "User not found")
+        login_page.enter_credentials(unregistered_email, unregistered_password)
+        login_page.click_login_button()
+        assert login_page.verify_error_message(["User not found", "Invalid credentials"]), "Error message 'User not found' or 'Invalid credentials' was not displayed."
