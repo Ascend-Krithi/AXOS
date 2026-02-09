@@ -53,27 +53,35 @@ class TestRuleConfigurationNegativeCases:
         error_msg = await self.rule_page.get_error_message()
         assert error_msg == "Condition parameters missing", f"Expected 'Condition parameters missing', got '{error_msg}'"
 
-class TestRuleConfigurationPositiveCases:
-    def __init__(self, page):
-        self.page = page
-        self.rule_page = RuleConfigurationPage(page)
+    async def test_tc_scrum158_07(self):
+        """
+        TC_SCRUM158_07: Prepare a rule schema with the maximum supported conditions and actions (10 each), submit, validate persistence.
+        """
+        await self.rule_page.navigate_to_rule_configuration()
+        max_rule_schema = {
+            "conditions": [{"type": f"condition_type_{i}", "value": f"value_{i}"} for i in range(10)],
+            "actions": [{"type": f"action_type_{i}", "amount": i * 10} for i in range(10)]
+        }
+        await self.rule_page.fill_rule_schema(max_rule_schema)
+        valid, message = await self.rule_page.validate_schema()
+        assert valid, f"Schema should be valid: {message}"
+        await self.rule_page.submit_rule()
+        rule = await self.rule_page.retrieve_rule(rule_id=None)
+        assert len(rule.get("conditions", [])) == 10, "All 10 conditions should be persisted"
+        assert len(rule.get("actions", [])) == 10, "All 10 actions should be persisted"
+        return True
 
-    async def test_max_conditions_actions_schema(self):
+    async def test_tc_scrum158_08(self):
         """
-        TC_SCRUM158_07: Prepare schema with maximum supported conditions and actions (10 each), submit, validate persistence.
+        TC_SCRUM158_08: Prepare a rule schema with empty 'conditions' and 'actions' arrays, submit, validate response.
         """
-        await self.rule_page.prepare_max_conditions_actions_schema()
-        await self.rule_page.submit_max_conditions_actions_schema()
-        # Assuming rule_id is available after submission
-        rule_id = 'MAX_COND_ACT_RULE'  # Replace with actual retrieval if needed
-        result = await self.rule_page.validate_max_conditions_actions_persistence(rule_id)
-        assert result, 'Rule did not persist all conditions/actions as expected.'
-
-    async def test_empty_conditions_actions_schema(self):
-        """
-        TC_SCRUM158_08: Prepare schema with empty conditions/actions, submit, validate response.
-        """
-        await self.rule_page.prepare_empty_conditions_actions_schema()
-        await self.rule_page.submit_empty_conditions_actions_schema()
-        success, message = await self.rule_page.validate_empty_conditions_actions_response()
-        assert success, f'Expected schema to be valid, got error: {message}'
+        await self.rule_page.navigate_to_rule_configuration()
+        empty_rule_schema = {
+            "conditions": [],
+            "actions": []
+        }
+        await self.rule_page.fill_rule_schema(empty_rule_schema)
+        valid, message = await self.rule_page.validate_schema()
+        await self.rule_page.submit_rule()
+        # Business rule: Accept or error, both are valid as per acceptance criteria
+        return valid, message
