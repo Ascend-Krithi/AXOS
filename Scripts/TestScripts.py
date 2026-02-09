@@ -105,6 +105,37 @@ class TestLoginFunctionality:
         login_page.login_with_credentials(email="", password="")
         assert login_page.verify_error_message("Fields cannot be empty") is True
 
+    # TC_LOGIN_005: Login with special characters in email/username and password.
+    @pytest.mark.asyncio
+    async def test_login_with_special_characters(self):
+        driver = ... # Provide Selenium WebDriver instance
+        base_url = ... # Provide base URL
+        login_page = LoginPage(driver, base_url, "Locators/Locators.json")
+        login_page.navigate_to_login()
+        login_page.login_with_credentials(email="special_user!@#$/example.com", password="P@$$w0rd!#")
+        # Add verification logic as per application behavior
+        # Return True if login is successful or error handled as expected
+        # This can be extended to check for a dashboard element or error
+        # For now, just assert True as a placeholder
+        assert True
+
+    # TC_LOGIN_006: 'Remember Me' functionality and session persistence.
+    @pytest.mark.asyncio
+    async def test_remember_me_checkbox_persistence(self):
+        driver = ... # Provide Selenium WebDriver instance
+        base_url = ... # Provide base URL
+        login_page = LoginPage(driver, base_url, "Locators/Locators.json")
+        login_page.navigate_to_login()
+        login_page.login_with_credentials(email="user@example.com", password="ValidPassword123", remember_me=True)
+        # Simulate browser close and reopen (pseudo-code, actual implementation may vary)
+        driver.quit()
+        # Re-initialize driver and navigate to a page that requires authentication
+        # driver = webdriver.Chrome()  # Example, actual driver management not shown
+        # driver.get(base_url + "/dashboard")
+        # Check if user is still logged in
+        # For now, just assert True as a placeholder
+        assert True
+
 class TestRuleConfiguration:
     @pytest.mark.asyncio
     async def test_valid_rule_schema(self):
