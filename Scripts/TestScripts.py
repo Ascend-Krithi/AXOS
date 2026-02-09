@@ -46,5 +46,24 @@ class TestRuleConfiguration(unittest.TestCase):
         self.assertIn('trigger', result['error_fields'], "Missing trigger field should be reported.")
         self.assertIsNotNone(result.get('error_message'), "Error message should be returned for missing trigger.")
 
+    def test_TC_SCRUM158_07_create_rule_with_required_fields(self):
+        schema = {
+            "trigger": {"type": "manual"},
+            "conditions": [{"type": "amount", "operator": "==", "value": 1}],
+            "actions": [{"type": "transfer", "account": "G", "amount": 1}]
+        }
+        result = self.rule_page.create_rule_with_required_fields(schema)
+        self.assertIn(result['status'], ['success', 'error', 'unknown'], "Unexpected status returned.")
+        self.assertEqual(result['status'], 'success', f"Rule creation failed: {result.get('message', '')}")
+
+    def test_TC_SCRUM158_08_create_rule_with_large_metadata(self):
+        schema = {
+            "trigger": {"type": "manual"}
+        }
+        metadata = 'X' * 10000  # 10,000 characters
+        result = self.rule_page.create_rule_with_large_metadata(schema, metadata)
+        self.assertIn(result['status'], ['success', 'error', 'unknown'], "Unexpected status returned.")
+        self.assertEqual(result['status'], 'success', f"Rule creation failed or performance issue: {result.get('message', '')}")
+
 if __name__ == '__main__':
     unittest.main()
