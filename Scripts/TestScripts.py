@@ -1,6 +1,8 @@
 import pytest
 from Pages.LoginPage import LoginPage
 from Pages.RuleConfigurationPage import RuleConfigurationPage
+from Pages.TransactionPage import TransactionPage
+from Pages.RuleExecutionVerificationPage import RuleExecutionVerificationPage
 import datetime
 import asyncio
 
@@ -170,3 +172,84 @@ class TestRuleConfiguration:
             destination_account=None
         )
         self.rule_page.assert_unsupported_action_type_error()
+
+    async def test_after_deposit_percentage_rule(self):
+        """
+        TC-FT-005: Define a rule for 10% of deposit action, simulate deposit of 500 units, verify transfer of 50 units.
+        """
+        await self.rule_page.navigate()
+        rule_name = f"AfterDepositPercentage_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+        trigger_type = "after_deposit"
+        trigger_data = {}
+        action_type = "percentage_of_deposit"
+        action_data = {"percentage": 10}
+        conditions = []
+
+        await self.rule_page.create_rule(
+            rule_id=rule_name,
+            rule_name=rule_name,
+            trigger_type=trigger_type,
+            trigger_data=trigger_data,
+            action_type=action_type,
+            action_data=action_data,
+            conditions=conditions,
+            destination_account=None
+        )
+
+        # Validate rule acceptance
+        assert self.rule_page.get_rule_acceptance_message() is not None
+
+        # Simulate deposit of 500 units
+        transaction_page = TransactionPage(self.page)
+        transaction_page.make_deposit(500)
+
+        # Verify transfer of 50 units is executed
+        verification_page = RuleExecutionVerificationPage(self.page)
+        assert verification_page.verify_transaction(expected_amount=50, rule_name=rule_name)
+
+    async def test_currency_conversion_rule_and_existing_rule_execution(self):
+        """
+        TC-FT-006: Define a rule with future trigger type ('currency_conversion'), validate acceptance/rejection, verify existing rules continue to execute as before.
+        """
+        await self.rule_page.navigate()
+        rule_name = f"CurrencyConversion_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+        trigger_type = "currency_conversion"
+        trigger_data = {"currency": "EUR"}
+        action_type = "fixed_amount"
+        action_data = {"amount": 100}
+        conditions = []
+
+        await self.rule_page.create_rule(
+            rule_id=rule_name,
+            rule_name=rule_name,
+            trigger_type=trigger_type,
+            trigger_data=trigger_data,
+            action_type=action_type,
+            action_data=action_data,
+            conditions=conditions,
+            destination_account=None
+        )
+
+        # Validate system acceptance or clear rejection message
+        acceptance_msg = self.rule_page.get_rule_acceptance_message()
+        error_msg = self.rule_page.get_schema_error_message()
+        assert acceptance_msg or error_msg, "System must accept or gracefully reject the rule"
+
+        # Verify existing rules continue to execute
+        # For demonstration, re-run TC-FT-005 (10% deposit rule)
+        existing_rule_name = f"AfterDepositPercentage_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+        await self.rule_page.create_rule(
+            rule_id=existing_rule_name,
+            rule_name=existing_rule_name,
+            trigger_type="after_deposit",
+            trigger_data={},
+            action_type="percentage_of_deposit",
+            action_data={"percentage": 10},
+            conditions=[],
+            destination_account=None
+        )
+        assert self.rule_page.get_rule_acceptance_message() is not None
+        transaction_page = TransactionPage(self.page)
+        transaction_page.make_deposit(500)
+        verification_page = RuleExecutionVerificationPage(self.page)
+        assert verification_page.verify_transaction(expected_amount=50, rule_name=existing_rule_name)
