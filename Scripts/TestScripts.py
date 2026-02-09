@@ -86,3 +86,61 @@ class TestRuleConfiguration:
         self.rule_config_page.edit_json_schema(rule_schema)
         self.rule_config_page.validate_schema()
         assert 'valid' in self.rule_config_page.get_success_message().lower()
+
+    async def test_TC_SCRUM158_07(self):
+        """
+        Test Case TC_SCRUM158_07:
+        - Prepare a rule schema with the maximum supported conditions and actions (10 each).
+        - Submit the schema and validate that all conditions/actions are persisted.
+        """
+        self.rule_config_page.fill_rule_form('RULE003', 'Max Conditions/Actions Rule')
+        self.rule_config_page.select_trigger_type('recurring')
+        self.rule_config_page.set_trigger_date('2024-06-03')
+        self.rule_config_page.set_recurring_interval('30')
+        # Add 10 conditions
+        conditions = []
+        for i in range(10):
+            conditions.append({
+                'type': 'balance',
+                'threshold': str(1000 + i * 100),
+                'source': f'provider_{chr(97 + i)}',
+                'operator': 'greater_than' if i % 2 == 0 else 'less_than'
+            })
+        self.rule_config_page.add_multiple_conditions(conditions)
+        # Add 10 actions
+        actions = []
+        for i in range(10):
+            actions.append({
+                'type': 'transfer',
+                'amount': str(100 + i * 10),
+                'percentage': str(10 + i),
+                'destination_account': f'ACC{100 + i}'
+            })
+        self.rule_config_page.add_multiple_actions(actions)
+        # Prepare JSON schema
+        rule_schema = '{"conditions": ' + str(conditions) + ', "actions": ' + str(actions) + '}'
+        self.rule_config_page.edit_json_schema(rule_schema)
+        self.rule_config_page.validate_schema()
+        assert 'valid' in self.rule_config_page.get_success_message().lower()
+        self.rule_config_page.submit_rule()
+        assert self.rule_config_page.is_rule_persisted('RULE003')
+        assert self.rule_config_page.validate_conditions_actions_count(10, 10)
+
+    async def test_TC_SCRUM158_08(self):
+        """
+        Test Case TC_SCRUM158_08:
+        - Prepare a rule schema with empty 'conditions' and 'actions' arrays.
+        - Submit the schema and validate error handling.
+        """
+        self.rule_config_page.fill_rule_form('RULE004', 'Empty Conditions/Actions Rule')
+        self.rule_config_page.select_trigger_type('recurring')
+        self.rule_config_page.set_trigger_date('2024-06-04')
+        self.rule_config_page.set_recurring_interval('7')
+        # Empty lists
+        conditions = []
+        actions = []
+        rule_schema = '{"conditions": [], "actions": []}'
+        self.rule_config_page.edit_json_schema(rule_schema)
+        self.rule_config_page.validate_schema()
+        error_message = self.rule_config_page.get_schema_error_message()
+        assert error_message is not None and error_message != ''
