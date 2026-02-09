@@ -38,5 +38,63 @@ class RuleEngineTests(unittest.TestCase):
         result_existing = rule_engine.verify_existing_rules_execution()
         self.assertTrue(result_existing, "Existing rules did not execute as before after future rule definition")
 
+    def test_TC_FT_007_load_batch_rules_and_trigger_evaluation(self):
+        """
+        TC-FT-007: Load 10,000 valid rules from JSON file and trigger evaluation.
+        1. Load rules using load_rules_batch(rules_json_path), expect successful and timely loading.
+        2. Trigger evaluation for all rules using trigger_evaluation(), expect processing within performance thresholds.
+        """
+        rule_engine = RuleEnginePage()
+        # Path to batch JSON file with 10,000 valid rules
+        rules_json_path = "data/rules_batch_10000.json"
+        import time
+        start_load = time.time()
+        result_load = rule_engine.load_rules_batch(rules_json_path)
+        end_load = time.time()
+        load_duration = end_load - start_load
+        self.assertTrue(result_load, "Batch rule loading failed")
+        self.assertLess(load_duration, 60, "Loading 10,000 rules exceeded acceptable time (60s)")
+
+        start_eval = time.time()
+        result_eval = rule_engine.trigger_evaluation()
+        end_eval = time.time()
+        eval_duration = end_eval - start_eval
+        self.assertTrue(result_eval, "Rule evaluation failed for batch")
+        self.assertLess(eval_duration, 120, "Evaluation of 10,000 rules exceeded performance threshold (120s)")
+
+    def test_TC_FT_008_submit_rule_with_sql_injection(self):
+        """
+        TC-FT-008: Submit a rule with SQL injection in a field value and expect rejection.
+        1. Submit rule with SQL injection payload using submit_rule_with_sql_injection(rule_data).
+        2. Expect system to reject rule and not execute any SQL.
+        """
+        rule_engine = RuleEnginePage()
+        sql_injection_payload = {
+            "trigger": {
+                "type": "specific_date",
+                "date": "2024-07-01T10:00:00Z"
+            },
+            "action": {
+                "type": "fixed_amount",
+                "amount": 100
+            },
+            "conditions": [
+                {
+                    "type": "balance_threshold",
+                    "value": "1000; DROP TABLE users;--"
+                }
+            ]
+        }
+        response = rule_engine.submit_rule_with_sql_injection(sql_injection_payload)
+        # Assert system rejects rule and does not execute SQL
+        if isinstance(response, dict) or isinstance(response, str):
+            response_str = str(response).lower()
+            self.assertTrue("reject" in response_str or "error" in response_str,
+                            "System did not reject rule with SQL injection payload")
+            self.assertFalse("drop table" in response_str or "users" in response_str,
+                             "System response should not contain evidence of SQL execution")
+        else:
+            self.fail("Unexpected response type from submit_rule_with_sql_injection")
+
 if __name__ == "__main__":
     unittest.main()
