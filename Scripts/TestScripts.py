@@ -56,5 +56,23 @@ class TestRuleConfiguration(unittest.TestCase):
             rule_page.define_rule(rule_unsupported_action)
         self.assertIn('unsupported action', str(context.exception).lower())
 
+    def test_load_10000_rules_and_verify_performance_TC_FT_007(self):
+        """TC-FT-007: Load 10,000 valid rules and verify performance. Trigger evaluation for all rules simultaneously."""
+        rule_page = RuleConfigurationPage(self.driver)
+        # Generate 10,000 valid rules
+        rules = [{'id': f'rule_{i}', 'name': f'Rule {i}'} for i in range(1, 10001)]
+        load_time = rule_page.load_rules_and_verify_performance(rules)
+        self.assertLess(load_time, 60, "System should load 10,000 rules within 60 seconds.")
+        rule_page.trigger_evaluation_for_all_rules()
+        # Additional performance assertions can be added as needed
+
+    def test_submit_rule_with_sql_injection_TC_FT_008(self):
+        """TC-FT-008: Submit a rule with SQL injection in a field value and verify system rejection."""
+        rule_page = RuleConfigurationPage(self.driver)
+        sql_payload = "1000; DROP TABLE users;--"
+        error_message = rule_page.submit_rule_with_sql_injection(sql_payload)
+        self.assertIsNotNone(error_message, "System should reject rule with SQL injection.")
+        self.assertIn("error", error_message.lower(), "Error message should indicate rejection.")
+
 if __name__ == '__main__':
     unittest.main()
