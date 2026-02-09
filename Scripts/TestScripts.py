@@ -98,3 +98,19 @@ class TestLogin:
         # Step 4: Verify confirmation message is displayed
         confirmation = login_page.get_forgot_password_confirmation()
         assert confirmation is not None and confirmation != "", "Password reset confirmation message not displayed"
+
+    # TC_LOGIN_009: Rapid invalid login attempts, expect rate limiting/captcha/lockout
+    def test_TC_LOGIN_009_rapid_invalid_login_attempts(self):
+        login_page = LoginPage(self.driver)
+        result = login_page.rapid_invalid_login_attempts("wronguser@example.com", "WrongPassword", attempts=10)
+        assert any(keyword in result.lower() for keyword in ["captcha", "lockout", "rate limiting"]), f"Expected rate limiting, lockout, or captcha, got: {result}"
+
+    # TC_LOGIN_010: Case sensitivity check for login credentials
+    def test_TC_LOGIN_010_case_sensitivity(self):
+        login_page = LoginPage(self.driver)
+        results = login_page.test_case_sensitivity("USER@EXAMPLE.COM", "ValidPassword123")
+        for variant, outcome in results.items():
+            if variant == "USER@EXAMPLE.COM":
+                assert outcome["login_success"], f"Exact case variant should succeed, got error: {outcome['error_message']}"
+            else:
+                assert not outcome["login_success"], f"Variant {variant} should fail, got success. Error: {outcome['error_message']}"
