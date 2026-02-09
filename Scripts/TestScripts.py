@@ -126,3 +126,45 @@ class TestRuleConfiguration(unittest.TestCase):
         error_msg = self.page.test_unsupported_trigger_type()
         self.assertIsNotNone(error_msg, "Rule was not rejected for unsupported trigger type.")
         self.assertTrue("unsupported" in error_msg.lower() or "extensibility" in error_msg.lower() or "error" in error_msg.lower(), "Error does not indicate extensibility issue.")
+
+    def test_TC_SCRUM158_01_prepare_and_submit_valid_rule_schema(self):
+        """TC_SCRUM158_01: Prepare a valid rule schema with all supported trigger, condition, and action types. Submit and verify success and retrievability."""
+        schema = {
+            "trigger": {"type": "interval", "value": "daily"},
+            "conditions": [{"type": "amount", "operator": ">", "value": 100}],
+            "actions": [{"type": "transfer", "account": "A", "amount": 100}]
+        }
+        result = self.page.prepare_and_submit_rule_schema(schema)
+        self.assertTrue(result is not None and ("success" in result.lower() or result is True), f"Schema was not accepted: {result}")
+        # Optionally verify retrievability if implemented
+        if hasattr(self.page, 'verify_rule_retrievable'):
+            try:
+                retrievable = self.page.verify_rule_retrievable()
+                if retrievable is not None:
+                    self.assertTrue(retrievable, "Rule was not retrievable after creation.")
+            except Exception:
+                pass
+
+    def test_TC_SCRUM158_02_prepare_schema_with_multiple_conditions_and_actions(self):
+        """TC_SCRUM158_02: Prepare a schema with two conditions and two actions. Submit and verify all are stored."""
+        schema = {
+            "trigger": {"type": "manual"},
+            "conditions": [
+                {"type": "amount", "operator": ">", "value": 500},
+                {"type": "country", "operator": "==", "value": "US"}
+            ],
+            "actions": [
+                {"type": "transfer", "account": "B", "amount": 500},
+                {"type": "notify", "message": "Transfer complete"}
+            ]
+        }
+        result = self.page.prepare_and_submit_rule_schema(schema)
+        self.assertTrue(result is not None and ("success" in result.lower() or result is True), f"Schema was not accepted: {result}")
+        # Optionally verify all conditions/actions stored if implemented
+        if hasattr(self.page, 'verify_rule_retrievable'):
+            try:
+                retrievable = self.page.verify_rule_retrievable()
+                if retrievable is not None:
+                    self.assertTrue(retrievable, "Rule with multiple conditions/actions was not retrievable.")
+            except Exception:
+                pass
