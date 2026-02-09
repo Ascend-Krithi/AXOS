@@ -1,6 +1,7 @@
 import pytest
 from Pages.LoginPage import LoginPage
 from RuleEnginePage import RuleEnginePage
+from RuleCreationPage import RuleCreationPage
 
 class TestLoginFunctionality:
     def __init__(self, page):
@@ -113,3 +114,41 @@ class TestLoginFunctionality:
             error = rule_engine.get_error_message()
             assert error is not None and 'currency_conversion' in error
         assert rule_engine.verify_existing_rules_function()
+
+    async def test_batch_rule_loading_and_simultaneous_evaluation(self):
+        # TC-FT-007: Load 10,000 valid rules, trigger evaluation, and check performance/consistency
+        rule_creation = RuleCreationPage(self.page)
+        num_rules = 10000
+        batch_rules = []
+        for i in range(num_rules):
+            rule = {
+                'trigger': {'type': 'after_deposit', 'id': f'batch_{i}'},
+                'action': {'type': 'fixed_amount', 'amount': i+1},
+                'conditions': []
+            }
+            batch_rules.append(rule)
+        upload_response = await rule_creation.upload_batch_rules(batch_rules)
+        assert upload_response['success'] is True, f"Batch upload failed: {upload_response.get('error', '')}"
+        # Evaluate all rules and check for performance and no failures
+        eval_response = await rule_creation.evaluate_all_rules()
+        assert eval_response['evaluated'] == num_rules, f"Not all rules evaluated: {eval_response}"
+        assert eval_response.get('failures', 0) == 0, f"Failures during evaluation: {eval_response.get('failures_detail', '')}"
+        # Optionally, check for timing if available
+        if 'duration_ms' in eval_response:
+            assert eval_response['duration_ms'] < 60000, f"Evaluation took too long: {eval_response['duration_ms']}ms"
+
+    async def test_sql_injection_rule_submission(self):
+        # TC-FT-008: Submit rule with SQL injection payload, ensure system rejects and does not execute SQL
+        rule_creation = RuleCreationPage(self.page)
+        injection_payload = "1; DROP TABLE rules; --"
+        malicious_rule = {
+            'trigger': {'type': 'after_deposit'},
+            'action': {'type': 'fixed_amount', 'amount': injection_payload},
+            'conditions': []
+        }
+        response = await rule_creation.submit_rule_with_sql_injection(malicious_rule)
+        assert response['success'] is False, "SQL injection rule was accepted!"
+        assert 'sql injection' in response.get('error', '').lower() or 'invalid' in response.get('error', '').lower(), f"Unexpected error message: {response.get('error', '')}"
+        # Optionally, verify system state is intact (e.g., rules table still exists)
+        if hasattr(rule_creation, 'verify_rules_table_integrity'):
+            assert await rule_creation.verify_rules_table_integrity(), "Rules table integrity compromised after SQL injection test!"
