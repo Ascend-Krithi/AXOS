@@ -1,35 +1,4 @@
-# LoginPage.py
-"""
-PageClass for Login Page
-Covers: TC_LOGIN_003, TC_LOGIN_004, TC_Login_07, TC_Login_08, TC_Login_09
-
-Executive Summary:
-This PageObject supports login negative/positive flows, session persistence, and now adds support for 'Forgot Password' navigation and max-length input validation.
-
-Analysis:
-- TestCase TC_Login_03: Validates error when email is empty and password is valid.
-- TestCase TC_Login_04: Validates error when password is empty and email is valid.
-- Implements negative login scenarios using validate_missing_email_error and validate_missing_password_error methods.
-- All new logic appended, no changes to prior methods.
-
-Implementation Guide:
-- Use validate_missing_email_error(password) to test login with empty email and a valid password.
-- Use validate_missing_password_error(email) to test login with valid email and empty password.
-- Use login_with_credentials(email, password) for standard login flows.
-
-QA Report:
-- All new and existing methods validated for backward compatibility.
-- Negative login scenarios tested and verified against acceptance criteria (TS03, TS04).
-- No regression in previous login flows.
-
-Troubleshooting Guide:
-- If error messages change, update get_error_message() and validation methods accordingly.
-- If locators change, update EMAIL_INPUT, PASSWORD_INPUT, LOGIN_BUTTON, ERROR_MESSAGE.
-
-Future Considerations:
-- Parameterize locators from centralized config for easier updates.
-- Extend validation methods for additional error scenarios as needed.
-"""
+import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -37,98 +6,63 @@ from selenium.webdriver.support import expected_conditions as EC
 
 class LoginPage:
     """
-    Page Object Model for the Login Page.
-    Covers negative scenarios:
-    - TC_LOGIN_003: Leave email/username empty, enter valid password, expect 'Email/Username required' error.
-    - TC_LOGIN_004: Enter valid email/username, leave password empty, expect 'Password required' error.
-    Extended:
-    - TC_Login_07: Valid login without 'Remember Me', verify session expiration after browser restart.
-    - TC_Login_08: Forgot Password link navigation.
-    - TC_Login_09: Max-length input validation.
+    Page Object for Login Page. Handles login workflow, including 'Remember Me' and session handling.
     """
-
-    EMAIL_INPUT = (By.ID, "email")
-    PASSWORD_INPUT = (By.ID, "password")
-    LOGIN_BUTTON = (By.ID, "loginBtn")
-    ERROR_MESSAGE = (By.ID, "errorMsg")
-    REMEMBER_ME_CHECKBOX = (By.ID, "rememberMe")  # Assumed locator, update if needed
-    FORGOT_PASSWORD_LINK = (By.LINK_TEXT, "Forgot Password")  # Assumed locator, update if needed
-
-    def __init__(self, driver: WebDriver):
+    def __init__(self, driver: WebDriver, locators: dict):
         self.driver = driver
-        self.wait = WebDriverWait(driver, 10)
+        self.locators = locators
+        self.wait = WebDriverWait(self.driver, 10)
 
-    def enter_email(self, email: str):
-        email_input = self.wait.until(EC.visibility_of_element_located(self.EMAIL_INPUT))
-        email_input.clear()
-        email_input.send_keys(email)
+    def navigate_to_login(self, url: str):
+        """Navigate to the login page URL."""
+        self.driver.get(url)
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, self.locators["login_username"])))
+
+    def enter_username(self, username: str):
+        """Enter the username/email into the username field."""
+        elem = self.wait.until(EC.visibility_of_element_located((By.XPATH, self.locators["login_username"])))
+        elem.clear()
+        elem.send_keys(username)
 
     def enter_password(self, password: str):
-        password_input = self.wait.until(EC.visibility_of_element_located(self.PASSWORD_INPUT))
-        password_input.clear()
-        password_input.send_keys(password)
+        """Enter the password into the password field."""
+        elem = self.wait.until(EC.visibility_of_element_located((By.XPATH, self.locators["login_password"])))
+        elem.clear()
+        elem.send_keys(password)
+
+    def set_remember_me(self, selected: bool):
+        """Set the 'Remember Me' checkbox to the desired state."""
+        checkbox = self.wait.until(EC.element_to_be_clickable((By.XPATH, self.locators["login_remember_me"])))
+        is_selected = checkbox.is_selected()
+        if selected != is_selected:
+            checkbox.click()
 
     def click_login(self):
-        login_btn = self.wait.until(EC.element_to_be_clickable(self.LOGIN_BUTTON))
-        login_btn.click()
+        """Click the login button."""
+        btn = self.wait.until(EC.element_to_be_clickable((By.XPATH, self.locators["login_button"])))
+        btn.click()
 
-    def get_error_message(self) -> str:
-        error_elem = self.wait.until(EC.visibility_of_element_located(self.ERROR_MESSAGE))
-        return error_elem.text
-
-    def login_with_credentials(self, email: str, password: str):
-        self.enter_email(email)
-        self.enter_password(password)
-        self.click_login()
-
-    def validate_missing_email_error(self, password: str) -> bool:
-        """
-        Attempt login with empty email and valid password, verify 'Email required' error message.
-        """
-        self.enter_email("")
-        self.enter_password(password)
-        self.click_login()
-        return self.get_error_message().strip() == "Email required"
-
-    def validate_missing_password_error(self, email: str) -> bool:
-        """
-        Attempt login with valid email and empty password, verify 'Password required' error message.
-        """
-        self.enter_email(email)
-        self.enter_password("")
-        self.click_login()
-        return self.get_error_message().strip() == "Password required"
-
-    # --- New methods for 'Remember Me' and session expiration ---
-    def check_remember_me(self):
-        checkbox = self.wait.until(EC.visibility_of_element_located(self.REMEMBER_ME_CHECKBOX))
-        if not checkbox.is_selected():
-            checkbox.click()
-
-    def uncheck_remember_me(self):
-        checkbox = self.wait.until(EC.visibility_of_element_located(self.REMEMBER_ME_CHECKBOX))
-        if checkbox.is_selected():
-            checkbox.click()
-
-    def is_remember_me_selected(self) -> bool:
-        checkbox = self.wait.until(EC.visibility_of_element_located(self.REMEMBER_ME_CHECKBOX))
-        return checkbox.is_selected()
-
-    def verify_session_expiration_after_restart(self, login_url: str) -> bool:
-        cookies = self.driver.get_cookies()
-        self.driver.quit()
-        self.driver.get(login_url)
+    def is_logged_in(self) -> bool:
+        """Check if user is logged in by verifying dashboard/homepage element."""
         try:
-            self.wait.until(EC.visibility_of_element_located(self.EMAIL_INPUT))
+            self.wait.until(EC.visibility_of_element_located((By.XPATH, self.locators["dashboard_home"])))
             return True
         except Exception:
             return False
 
-    # --- New method for TC_Login_08: Forgot Password link navigation ---
-    def click_forgot_password_link(self):
+    def simulate_browser_restart(self, url: str):
         """
-        Clicks the 'Forgot Password' link on the login page.
-        Navigates to the password recovery page.
+        Simulate closing and reopening the browser by deleting all cookies and navigating back to the site.
         """
-        forgot_link = self.wait.until(EC.element_to_be_clickable(self.FORGOT_PASSWORD_LINK))
-        forgot_link.click()
+        self.driver.delete_all_cookies()
+        self.driver.get(url)
+        time.sleep(2)
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, self.locators["login_username"])))
+
+    def is_logged_out(self) -> bool:
+        """Check if user is logged out by verifying login page element is visible."""
+        try:
+            self.wait.until(EC.visibility_of_element_located((By.XPATH, self.locators["login_username"])))
+            return True
+        except Exception:
+            return False
