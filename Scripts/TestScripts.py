@@ -1,3 +1,4 @@
+# TestScripts.py
 from selenium import webdriver
 from Pages.LoginPage import LoginPage
 from Pages.DashboardPage import DashboardPage
@@ -45,28 +46,32 @@ def test_TC_LOGIN_001(driver):
 
 # Test Case TC_LOGIN_002: Invalid credentials
 
-def test_TC_LOGIN_002_invalid_credentials(driver):
+def test_TC_LOGIN_002(driver):
     login_page = LoginPage(driver)
-    login_page.navigate_to_login()
-    # Step 1: Navigate to login page
+    login_page.navigate_to_login('https://example.com/login')
+    # Step 1: Navigate to the login page
+    assert driver.current_url.endswith('/login')
     # Step 2: Enter invalid email/username or password
-    login_page.enter_invalid_credentials('wronguser@example.com', 'WrongPassword')
-    # Step 3: Click Login
+    login_page.enter_credentials('wronguser@example.com', 'WrongPassword')
+    # Step 3: Click the Login button
     login_page.click_login()
-    # Step 4: Assert user remains on login page and error message is displayed
-    error_message = login_page.get_error_message()
-    assert error_message is not None and error_message != '', 'Error message should be displayed for invalid credentials.'
+    # Step 4: Assert error message for invalid credentials is displayed
+    error_msg = login_page.get_error_message()
+    assert error_msg != "", "Error message for invalid credentials should be displayed"
+    assert driver.current_url.endswith('/login'), "User should remain on login page"
 
 # Test Case TC_LOGIN_003: Empty fields
 
-def test_TC_LOGIN_003_empty_fields(driver):
+def test_TC_LOGIN_003(driver):
     login_page = LoginPage(driver)
-    login_page.navigate_to_login()
-    # Step 1: Navigate to login page
-    # Step 2: Leave fields empty
-    login_page.leave_fields_empty()
-    # Step 3: Click Login
+    login_page.navigate_to_login('https://example.com/login')
+    # Step 1: Navigate to the login page
+    assert driver.current_url.endswith('/login')
+    # Step 2: Leave email/username and password fields empty
+    login_page.enter_credentials('', '')
+    # Step 3: Click the Login button
     login_page.click_login()
-    # Step 4: Assert user remains on login page and validation message is displayed
-    validation_message = login_page.get_validation_message()
-    assert validation_message is not None and validation_message != '', 'Validation message should be displayed for empty fields.'
+    # Step 4: Assert validation message for empty fields is displayed
+    validation_msg = login_page.get_validation_message()
+    assert validation_msg != "", "Validation message for empty fields should be displayed"
+    assert driver.current_url.endswith('/login'), "User should remain on login page"
