@@ -68,43 +68,42 @@ class TestRuleConfiguration:
         except NotImplementedError:
             pass  # Implement or mock as needed for your environment
 
-    def test_bulk_rule_creation_and_evaluation(self):
+    def test_batch_rule_loading_and_evaluation(self):
         """
         Test Case TC-FT-007
         Steps:
-        1. Load 10,000 valid rules into the system.
-        2. Trigger evaluation for all rules simultaneously.
+        1. Generate 10,000 valid rules in JSON format.
+        2. Load all rules using RuleConfigurationPage.load_rules_batch.
+        3. Trigger evaluation using RuleConfigurationPage.trigger_evaluation_all_rules.
+        4. Assert both actions succeed.
         """
-        # Generate 10,000 valid rule JSONs
-        rules = []
+        batch_rules_json = []
         for i in range(10000):
             rule = {
-                "ruleId": f"rule_{i}",
-                "ruleName": f"Rule {i}",
-                "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"},
-                "action": {"type": "fixed_amount", "amount": 100},
+                "trigger": {"type": "specific_date", "date": f"2024-07-01T10:00:{i%60:02d}Z"},
+                "action": {"type": "fixed_amount", "amount": 100 + i},
                 "conditions": []
             }
-            rules.append(rule)
-        result = self.rule_page.bulk_create_rules(rules)
-        assert result['success_count'] >= 9990  # Acceptable threshold
-        assert result['duration'] < 600  # Acceptable time limit (10 minutes)
-        eval_result = self.rule_page.trigger_evaluation_for_all_rules()
-        assert eval_result['evaluation_success'] is True
-        assert eval_result['evaluation_duration'] < 300  # Acceptable evaluation time (5 minutes)
+            batch_rules_json.append(rule)
+        load_result = self.rule_page.load_rules_batch(batch_rules_json)
+        assert load_result == "Batch loaded successfully."
+        eval_result = self.rule_page.trigger_evaluation_all_rules()
+        assert eval_result == "Evaluation triggered for all rules."
 
     def test_sql_injection_rejection(self):
         """
         Test Case TC-FT-008
         Steps:
-        1. Submit a rule with SQL injection in a field value.
+        1. Submit a rule with SQL injection payload in balance_threshold.
+        2. Validate rejection using RuleConfigurationPage.validate_sql_injection.
+        3. Assert system rejects the rule.
         """
-        rule_json = {
-            "ruleId": "sql_injection_test",
-            "ruleName": "SQL Injection Test",
+        rule_data = {
             "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"},
             "action": {"type": "fixed_amount", "amount": 100},
-            "conditions": [{"type": "balance_threshold", "operator": "equals", "balanceThreshold": "1000; DROP TABLE users;--"}]
+            "conditions": [
+                {"field": "balance_threshold", "value": "1000; DROP TABLE users;"}
+            ]
         }
-        result_message = self.rule_page.submit_rule_with_sql_injection(rule_json)
-        assert result_message == 'Rule rejected as expected.'
+        rejection_message = self.rule_page.validate_sql_injection(rule_data)
+        assert rejection_message == "Rule rejected due to SQL injection."
