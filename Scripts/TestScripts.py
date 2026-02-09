@@ -40,5 +40,33 @@ class LoginTests(unittest.TestCase):
         confirmation_msg = self.login_page.forgot_password('user@example.com')
         self.assertIsNotNone(confirmation_msg, 'Password reset confirmation message should be displayed')
 
+    def test_TC_LOGIN_009_rapid_invalid_login_attempts(self):
+        """
+        Test Case TC_LOGIN_009:
+        - Navigate to login page
+        - Attempt to login with invalid credentials rapidly multiple times (10 times)
+        - Verify rate limiting, lockout, or captcha
+        """
+        self.login_page.navigate_to_login()
+        result = self.login_page.simulate_rapid_invalid_logins('wronguser@example.com', 'WrongPassword', attempts=10)
+        self.assertTrue(result['rate_limited'] or result['captcha_present'] or result['account_locked'], 'System should apply rate limiting, captcha, or lockout after rapid invalid attempts')
+        self.assertIsNotNone(result['error_message'], 'Error message should be displayed after rapid invalid attempts')
+
+    def test_TC_LOGIN_010_case_sensitivity(self):
+        """
+        Test Case TC_LOGIN_010:
+        - Navigate to login page
+        - Enter email/username and password with different cases (upper/lower/mixed)
+        - Click login
+        - Verify login succeeds only if credentials match exactly; error otherwise
+        """
+        self.login_page.navigate_to_login()
+        results = self.login_page.test_case_sensitivity('USER@EXAMPLE.COM', 'ValidPassword123')
+        # Only the 'original' variant should succeed; others should fail
+        self.assertTrue(results['original']['success'], 'Original credentials should succeed')
+        self.assertFalse(results['upper']['success'], 'Upper case credentials should fail')
+        self.assertFalse(results['lower']['success'], 'Lower case credentials should fail')
+        self.assertFalse(results['mixed']['success'], 'Mixed case credentials should fail')
+
 if __name__ == '__main__':
     unittest.main()
