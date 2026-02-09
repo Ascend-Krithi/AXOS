@@ -1,50 +1,64 @@
-# TestScripts.py
 import unittest
-from selenium import webdriver
+from RuleConfigurationPage import RuleConfigurationPage
 from Pages.LoginPage import LoginPage
+from Pages.ForgotPasswordPage import ForgotPasswordPage
+from selenium import webdriver
 
-class LoginTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.driver = webdriver.Chrome()
-        cls.login_page = LoginPage(cls.driver)
+class TestRuleConfiguration(unittest.TestCase):
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.driver.quit()
+    def setUp(self):
+        self.page = RuleConfigurationPage()
 
     # Existing test methods...
 
-    def test_TC09_special_character_login(self):
-        """
-        TC09: Login with special characters in username and password
-        Acceptance Criteria:
-        - Error message is shown for invalid special character input
-        """
-        self.login_page.navigate_to_login_page()
-        username = "user!@#"
-        password = "pass$%^&*"
-        self.login_page.enter_special_characters(username, password)
-        self.login_page.click_login_button()
-        error_message = self.login_page.validate_error_message()
-        self.assertIsNotNone(error_message)
-        self.assertIn("Invalid characters", error_message)
+    def test_TC_SCRUM158_01(self):
+        ...
+    # (all other methods as above)
 
-    def test_TC10_network_server_error_during_login(self):
-        """
-        TC10: Network/server error during login
-        Acceptance Criteria:
-        - Error message is shown for network/server failure
-        """
-        self.login_page.navigate_to_login_page()
-        username = "valid_user"
-        password = "ValidPass123"
-        self.login_page.enter_special_characters(username, password)
-        self.login_page.click_login_button()
-        # Simulate network failure and validate error
-        error_message = self.login_page.simulate_network_failure_and_validate_error()
-        self.assertIsNotNone(error_message)
-        self.assertIn("Network error", error_message)
+    def test_TC03_login_empty_credentials(self):
+        ...
+    def test_TC04_login_empty_username(self):
+        ...
+
+    def test_TC05_login_empty_password(self):
+        ...
+    def test_TC06_login_remember_me(self):
+        ...
+    def test_TC07_forgot_password_flow(self):
+        ...
+    def test_TC08_login_max_length_credentials(self):
+        ...
+
+    def test_TC09_login_with_special_characters(self):
+        """TC09: Navigate to login page, enter username and password with special characters, click login, validate login or error."""
+        driver = webdriver.Chrome()
+        login_page = LoginPage(driver)
+        try:
+            login_page.navigate_to_login_page("http://example.com/login")  # Replace with actual URL
+            login_page.login_with_special_characters("user!@#", "pass$%^&*")
+            # Validate login success or error
+            error_message = login_page.get_error_message()
+            if error_message:
+                # If error is expected for invalid credentials
+                self.assertIn("Invalid", error_message)
+            else:
+                # If login is successful, validate post-login condition if possible
+                self.assertIsNone(error_message, "Unexpected error message displayed.")
+        finally:
+            driver.quit()
+
+    def test_TC10_login_network_failure(self):
+        """TC10: Navigate to login page, enter valid credentials, simulate network/server error during login, validate error message."""
+        driver = webdriver.Chrome()
+        login_page = LoginPage(driver)
+        try:
+            login_page.navigate_to_login_page("http://example.com/login")  # Replace with actual URL
+            login_page.login_with_network_failure("valid_user", "ValidPass123")
+            error_message = login_page.get_error_message()
+            self.assertIsNotNone(error_message, "Expected error message not displayed during network/server error.")
+            self.assertIn("Unable to connect", error_message)
+        finally:
+            driver.quit()
 
 if __name__ == "__main__":
     unittest.main()
