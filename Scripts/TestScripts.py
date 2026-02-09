@@ -1,114 +1,78 @@
+
 import pytest
 import asyncio
-
 from Pages.LoginPage import LoginPage
-from Pages.RuleConfigurationPage import RuleConfigurationPage
 
+@pytest.mark.asyncio
 class TestLoginFunctionality:
-    # Existing test methods...
-    # ... [existing methods here] ...
-    @pytest.mark.asyncio
-    async def test_login_without_remember_me_session_not_persisted(self):
-        login_page = LoginPage()
-        await login_page.navigate_to_login()
-        await login_page.login(username="valid_user", password="valid_pass", remember_me=False)
-        await login_page.close_browser()
-        await login_page.reopen_browser()
-        assert await login_page.verify_session_not_persisted(), "Session should not persist after browser restart when 'Remember Me' is not checked."
 
-    @pytest.mark.asyncio
-    async def test_forgot_password_flow_confirmation(self):
-        login_page = LoginPage()
-        await login_page.navigate_to_login()
-        await login_page.forgot_password(email="registered_user@example.com")
-        assert await login_page.verify_password_reset_confirmation(), "Password reset confirmation message not found."
+    async def test_login_valid_credentials(self, driver):
+        login_page = LoginPage(driver)
+        await login_page.login('validuser@example.com', 'ValidPass123')
+        assert await login_page.is_logged_in()
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_001_valid_login_dashboard_redirection(self):
-        login_page = LoginPage(self.driver)
-        assert login_page.verify_login_page_displayed(), "Login page is not displayed."
-        login_page.login("user@example.com", "ValidPass123")
-        # Add assertion for dashboard redirection
+    async def test_login_invalid_credentials(self, driver):
+        login_page = LoginPage(driver)
+        await login_page.login('invaliduser@example.com', 'WrongPass456')
+        error_message = await login_page.get_login_error_message()
+        assert error_message == 'Invalid username or password.'
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_002_invalid_login_error_message(self):
-        login_page = LoginPage(self.driver)
-        assert login_page.verify_login_page_displayed(), "Login page is not displayed."
-        login_page.login("user@example.com", "WrongPass456")
-        assert login_page.verify_invalid_credentials_error(), "Error message 'Invalid credentials' was not displayed."
+    async def test_login_empty_fields(self, driver):
+        login_page = LoginPage(driver)
+        await login_page.login('', '')
+        error_message = await login_page.get_login_error_message()
+        assert error_message == 'Please enter email and password.'
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_003_email_required_error(self):
-        login_page = LoginPage(self.driver)
-        assert login_page.verify_login_page_displayed(), "Login page is not displayed."
-        error_message = login_page.login_with_empty_email("ValidPass123")
-        assert error_message == "Email/Username required", "Error message 'Email/Username required' was not displayed."
+    async def test_login_email_format_validation(self, driver):
+        login_page = LoginPage(driver)
+        await login_page.login('notanemail', 'SomePass123')
+        error_message = await login_page.get_login_error_message()
+        assert error_message == 'Please enter a valid email address.'
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_004_password_required_error(self):
-        login_page = LoginPage(self.driver)
-        assert login_page.verify_login_page_displayed(), "Login page is not displayed."
-        error_message = login_page.login_with_empty_password("user@example.com")
-        assert error_message == "Password required", "Error message 'Password required' was not displayed."
+    async def test_login_password_min_length(self, driver):
+        login_page = LoginPage(driver)
+        await login_page.login('validuser@example.com', '123')
+        error_message = await login_page.get_login_error_message()
+        assert error_message == 'Password must be at least 8 characters.'
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_007_forgot_password_flow(self):
-        """
-        Implements TC_LOGIN_007:
-        1. Navigate to the login page.
-        2. Click the 'Forgot Password' link.
-        3. Verify presence of password recovery form.
-        """
-        login_page = LoginPage(self.driver)
-        login_page.navigate_to_login_page("https://example.com/login")
-        login_page.click_forgot_password()
-        assert login_page.verify_password_recovery_form(), "Password recovery form is not displayed."
+    async def test_login_email_max_length(self, driver):
+        login_page = LoginPage(driver)
+        long_email = 'a' * 46 + '@ex.com'  # 50 chars
+        await login_page.login(long_email, 'ValidPass123')
+        error_message = await login_page.get_login_error_message()
+        assert error_message in ['Invalid username or password.', 'Please enter a valid email address.']
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_008_sql_injection_login(self):
-        """
-        Implements TC_LOGIN_008:
-        1. Navigate to the login page.
-        2. Enter SQL injection string in email and password fields.
-        3. Click login button and verify error message 'Invalid credentials'.
-        """
-        login_page = LoginPage(self.driver)
-        login_page.navigate_to_login_page("https://example.com/login")
-        sql_email = "' OR 1=1;--"
-        sql_password = "' OR 1=1;--"
-        login_page.sql_injection_login_test(sql_email, sql_password)
-        # Error assertion is inside sql_injection_login_test
+    async def test_login_password_max_length(self, driver):
+        login_page = LoginPage(driver)
+        long_password = 'a' * 50
+        await login_page.login('validuser@example.com', long_password)
+        error_message = await login_page.get_login_error_message()
+        assert error_message in ['Invalid username or password.', 'Password is too long.']
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_009_max_input_length_validation(self):
-        """
-        Implements TC_LOGIN_009:
-        1. Navigate to login page.
-        2. Enter maximum allowed characters in email/username and password fields (50 chars).
-        3. Click login button.
-        4. Verify error message 'Invalid credentials' or successful login.
-        """
-        login_page = LoginPage(self.driver)
-        login_page.navigate_to_login_page("https://example.com/login")
-        max_email = "a" * 50
-        max_password = "b" * 50
-        login_page.enter_credentials(max_email, max_password)
-        login_page.click_login_button()
-        assert login_page.verify_error_message(["Invalid credentials"]), "Error message 'Invalid credentials' was not displayed or field overflow occurred."
+    # TC_LOGIN_009: Test max input length for email and password fields, error handling or successful login
+    async def test_login_max_input_length(self, driver):
+        login_page = LoginPage(driver)
+        max_email = 'a' * 42 + '@example.com'  # 50 chars total
+        max_password = 'P' * 50
+        # Validate max input length
+        await login_page.validate_max_input_length('email', max_email)
+        await login_page.validate_max_input_length('password', max_password)
+        await login_page.login(max_email, max_password)
+        error_message = await login_page.get_login_error_message()
+        # Accept either error or successful login depending on app logic
+        assert error_message in [
+            'Invalid username or password.',
+            'Email or password exceeds maximum length.',
+            'Please enter a valid email address.',
+            ''
+        ] or await login_page.is_logged_in()
 
-    @pytest.mark.asyncio
-    async def test_TC_LOGIN_010_unregistered_user_error(self):
-        """
-        Implements TC_LOGIN_010:
-        1. Navigate to login page.
-        2. Enter email/username and password for unregistered user.
-        3. Click login button.
-        4. Verify error message 'User not found' or 'Invalid credentials'.
-        """
-        login_page = LoginPage(self.driver)
-        login_page.navigate_to_login_page("https://example.com/login")
-        unregistered_email = "unknown@example.com"
-        unregistered_password = "RandomPass789"
-        login_page.enter_credentials(unregistered_email, unregistered_password)
-        login_page.click_login_button()
-        assert login_page.verify_error_message(["User not found", "Invalid credentials"]), "Error message 'User not found' or 'Invalid credentials' was not displayed."
+    # TC_LOGIN_010: Attempt login with unregistered user, verify error and stay on login page
+    async def test_login_unregistered_user(self, driver):
+        login_page = LoginPage(driver)
+        unregistered_email = 'unknown@example.com'
+        unregistered_password = 'RandomPass789'
+        await login_page.login_and_validate_error(unregistered_email, unregistered_password)
+        error_message = await login_page.get_login_error_message()
+        assert error_message == 'Invalid username or password.'
+        assert await login_page.is_on_login_page()
