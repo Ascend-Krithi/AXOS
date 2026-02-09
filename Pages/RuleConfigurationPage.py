@@ -158,3 +158,84 @@ class RuleConfigurationPage:
             metadata.get('description') == expected_description and
             metadata.get('tags') == expected_tags
         )
+
+    # ------------------
+    # TC_SCRUM158_07 (testCaseId: 1353)
+    # ------------------
+    async def create_rule_with_max_conditions_and_actions(self, rule_id: str, rule_name: str, conditions: list, actions: list) -> bool:
+        """
+        Creates a rule with the maximum supported number of conditions and actions.
+        Steps:
+        1. Fill rule form.
+        2. Add all conditions (up to max supported).
+        3. Add all actions (up to max supported).
+        4. Validate the JSON schema.
+        5. Submit the schema.
+        6. Retrieve and validate all conditions/actions are persisted.
+        Args:
+            rule_id (str): Rule ID value
+            rule_name (str): Rule Name value
+            conditions (list): List of condition dicts
+            actions (list): List of action dicts
+        Returns:
+            bool: True if all conditions/actions are persisted, False otherwise
+        """
+        import json
+        # Step 1: Fill the rule form
+        await self.fill_rule_form(rule_id, rule_name)
+        # Step 2: Add all conditions
+        for condition in conditions:
+            await self.add_condition(**condition)
+        # Step 3: Add all actions
+        for action in actions:
+            await self.set_action(**action)
+        # Step 4: Validate JSON schema
+        await self.validate_schema()
+        success_msg = await self.get_success_message()
+        if 'valid' not in success_msg.lower():
+            return False
+        # Step 5: Submit the schema
+        await self.submit_schema()
+        # Step 6: Retrieve and validate persistence
+        schema_text = await self.json_schema_editor.inner_text()
+        schema = json.loads(schema_text)
+        persisted_conditions = schema.get('conditions', [])
+        persisted_actions = schema.get('actions', [])
+        return len(persisted_conditions) == len(conditions) and len(persisted_actions) == len(actions)
+
+    # ------------------
+    # TC_SCRUM158_08 (testCaseId: 1354)
+    # ------------------
+    async def create_rule_with_empty_conditions_and_actions(self, rule_id: str, rule_name: str) -> str:
+        """
+        Creates a rule with empty 'conditions' and 'actions' arrays and validates the schema.
+        Steps:
+        1. Fill rule form.
+        2. Set empty conditions/actions in JSON schema editor.
+        3. Validate the JSON schema.
+        4. Submit the schema.
+        5. Return API/validation response.
+        Args:
+            rule_id (str): Rule ID value
+            rule_name (str): Rule Name value
+        Returns:
+            str: Validation result message (success or error)
+        """
+        import json
+        # Step 1: Fill the rule form
+        await self.fill_rule_form(rule_id, rule_name)
+        # Step 2: Set empty arrays in JSON schema editor
+        schema_text = await self.json_schema_editor.inner_text()
+        schema = json.loads(schema_text)
+        schema['conditions'] = []
+        schema['actions'] = []
+        await self.json_schema_editor.fill(json.dumps(schema, indent=2))
+        # Step 3: Validate schema
+        await self.validate_schema()
+        # Step 4: Submit schema
+        await self.submit_schema()
+        # Step 5: Return validation message
+        try:
+            return await self.get_success_message()
+        except Exception:
+            return await self.get_schema_error_message()
