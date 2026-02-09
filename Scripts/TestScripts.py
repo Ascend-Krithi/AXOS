@@ -167,3 +167,19 @@ class TestRuleConfiguration:
             action_amount=50
         )
         assert 'trigger' in error_message.lower() or 'missing' in error_message.lower()
+
+    # TC_SCRUM158_05: Prepare a schema with unsupported trigger type and verify error
+    async def test_TC_SCRUM158_05(self):
+        schema_text = '{"trigger":{"type":"unsupported_type"},"conditions":[{"type":"amount","operator":"<","value":10}],"actions":[{"type":"transfer","account":"E","amount":10}]}'
+        await self.rule_config_page.enter_rule_id('TC_SCRUM158_05')
+        await self.rule_config_page.enter_rule_name('Unsupported Trigger Type')
+        result = self.rule_config_page.verify_unsupported_trigger_type_error(schema_text)
+        assert result, 'Expected unsupported trigger type error message.'
+
+    # TC_SCRUM158_06: Prepare a schema with maximum allowed conditions and actions and verify storage
+    async def test_TC_SCRUM158_06(self):
+        schema_text = '{"trigger":{"type":"manual"},"conditions":[{"type":"amount","operator":"==","value":1},{"type":"amount","operator":"==","value":2},{"type":"amount","operator":"==","value":3},{"type":"amount","operator":"==","value":4},{"type":"amount","operator":"==","value":5},{"type":"amount","operator":"==","value":6},{"type":"amount","operator":"==","value":7},{"type":"amount","operator":"==","value":8},{"type":"amount","operator":"==","value":9},{"type":"amount","operator":"==","value":10}],"actions":[{"type":"transfer","account":"F1","amount":1},{"type":"transfer","account":"F2","amount":2},{"type":"transfer","account":"F3","amount":3},{"type":"transfer","account":"F4","amount":4},{"type":"transfer","account":"F5","amount":5},{"type":"transfer","account":"F6","amount":6},{"type":"transfer","account":"F7","amount":7},{"type":"transfer","account":"F8","amount":8},{"type":"transfer","account":"F9","amount":9},{"type":"transfer","account":"F10","amount":10}]}'
+        await self.rule_config_page.enter_rule_id('TC_SCRUM158_06')
+        await self.rule_config_page.enter_rule_name('Max Conditions Actions Storage')
+        result = self.rule_config_page.verify_max_conditions_actions_storage(schema_text)
+        assert result, 'Expected success message for storing maximum allowed conditions/actions.'
