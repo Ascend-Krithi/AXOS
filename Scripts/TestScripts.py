@@ -1,47 +1,45 @@
+# Scripts/TestScripts.py
+"""
+Test scripts for LoginPage scenarios: TC_LOGIN_007 (Forgot Password flow), TC_LOGIN_008 (SQL injection handling), TC_LOGIN_009 (max input length), TC_LOGIN_010 (unregistered user).
+"""
 import pytest
+from selenium import webdriver
 from Pages.LoginPage import LoginPage
 
-# Existing tests for TC_LOGIN_007 and TC_LOGIN_008 assumed here
+@pytest.fixture(scope="function")
+def driver():
+    driver = webdriver.Chrome()
+    yield driver
+    driver.quit()
 
-def test_TC_LOGIN_007(driver):
-    # ... existing logic ...
-    pass
-
-def test_TC_LOGIN_008(driver):
-    # ... existing logic ...
-    pass
-
-
-def test_TC_LOGIN_009_max_length_fields_and_ui_integrity(driver):
-    """
-    TC_LOGIN_009: Verify login fields accept max length (50 chars), UI integrity is preserved, and error is shown for invalid credentials.
-    """
-    driver.get('https://axos.example.com/login')
+# TC_LOGIN_007: Forgot Password flow
+def test_forgot_password_flow(driver):
     login_page = LoginPage(driver)
+    login_page.navigate_to_login("https://axos.example.com/login")
+    assert driver.current_url.endswith("/login")
+    login_page.click_forgot_password()
+    assert login_page.is_password_recovery_form_displayed(), "Password recovery form should be displayed."
 
-    # Step 1: Check max length fields and UI integrity
-    ui_intact = login_page.test_max_length_fields()
-    assert ui_intact, "UI integrity failed or field overflow after entering max length credentials."
-
-    # Step 2: Attempt login with max length invalid credentials
-    error_msg = login_page.login_with_max_length_invalid()
-    assert error_msg in ["Invalid credentials", "User not found"], f"Unexpected error message: {error_msg}"
-
-    # Step 3: Ensure no UI break or field overflow after error
-    ui_intact_after = login_page.test_max_length_fields()
-    assert ui_intact_after, "UI integrity failed or field overflow after failed login."
-
-
-def test_TC_LOGIN_010_login_with_unregistered_user(driver):
-    """
-    TC_LOGIN_010: Attempt login with unregistered user, verify error message and that user remains on login page.
-    """
-    driver.get('https://axos.example.com/login')
+# TC_LOGIN_008: SQL Injection attempt handling
+def test_sql_injection_login(driver):
     login_page = LoginPage(driver)
+    login_page.navigate_to_login("https://axos.example.com/login")
+    assert driver.current_url.endswith("/login")
+    sql_email = "' OR 1=1;--"
+    sql_password = "' OR 1=1;--"
+    login_page.login_with_sql_injection(sql_email, sql_password)
+    assert login_page.validate_invalid_credentials_error(), "Invalid credentials error should be shown."
 
-    # Step 1: Attempt login with unregistered user
-    error_msg = login_page.login_with_unregistered_user('unknown@example.com', 'RandomPass789')
-    assert error_msg in ["User not found", "Invalid credentials"], f"Unexpected error message: {error_msg}"
+# TC_LOGIN_009: Maximum input length validation
+def test_max_input_length_login(driver):
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login("https://axos.example.com/login")
+    assert driver.current_url.endswith("/login")
+    assert login_page.validate_max_input_length(50), "Input fields should accept up to 50 characters and handle errors properly."
 
-    # Step 2: Validate user remains on login page
-    assert login_page.validate_remain_on_login_page(), "User did not remain on login page after failed login."
+# TC_LOGIN_010: Unregistered user login error handling
+def test_unregistered_user_login_error(driver):
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login("https://axos.example.com/login")
+    assert driver.current_url.endswith("/login")
+    assert login_page.validate_unregistered_user_error("unknown@example.com", "RandomPass789"), "Error message for unregistered user should be correct."
