@@ -20,7 +20,6 @@ class TestRuleConfiguration:
         self.rule_config_page = RuleConfigurationPage(page)
 
     async def test_specific_date_trigger(self):
-        # TC-FT-001: Define a JSON rule with trigger type 'specific_date' set to a future date. Simulate system time reaching the trigger date. Verify transfer action executed once.
         future_date = self.rule_config_page.get_future_date(days=7)
         rule_json = {
             "trigger": {
@@ -41,7 +40,6 @@ class TestRuleConfiguration:
         assert executed_count == 1, f"Expected transfer action executed once, got {executed_count}"
 
     async def test_recurring_weekly_trigger(self):
-        # TC-FT-002: Define a JSON rule with trigger type 'recurring' and interval 'weekly'. Simulate passing of several weeks. Verify transfer action executed at each interval.
         rule_json = {
             "trigger": {
                 "type": "recurring",
@@ -63,29 +61,26 @@ class TestRuleConfiguration:
         assert executed_count == weeks_to_simulate, f"Expected transfer action executed {weeks_to_simulate} times, got {executed_count}"
 
     async def test_after_deposit_percentage_transfer(self):
-        # TC-FT-005: Define a rule for 10% of deposit action. Simulate deposit of 500 units. Verify transfer of 50 units is executed.
         rule_id = "TC-FT-005"
         rule_name = "After Deposit 10 Percent Rule"
         percentage = 10
         deposit_amount = 500
         expected_transfer = 50
-        schema_str = '{"type": "object", "properties": {}}'  # Replace with actual schema if needed
+        schema_str = '{"type": "object", "properties": {}}'
         await self.rule_config_page.navigate()
         self.rule_config_page.define_rule_after_deposit_percentage(rule_id, rule_name, percentage, schema_str)
         self.rule_config_page.simulate_deposit_and_verify_transfer(deposit_amount, expected_transfer)
 
     async def test_currency_conversion_trigger(self):
-        # TC-FT-006: Define a rule with trigger type 'currency_conversion', fixed amount 100 EUR. System accepts or gracefully rejects. Verify existing rules continue to execute as before.
         rule_id = "TC-FT-006"
         rule_name = "Currency Conversion Rule"
         currency = "EUR"
         amount = 100
-        schema_str = '{"type": "object", "properties": {}}'  # Replace with actual schema if needed
+        schema_str = '{"type": "object", "properties": {}}'
         await self.rule_config_page.navigate()
         self.rule_config_page.define_rule_currency_conversion(rule_id, rule_name, currency, amount, schema_str)
         self.rule_config_page.verify_existing_rules_function()
 
-    # --- TC-FT-003: Rule with Multiple Conditions ---
     async def test_rule_with_multiple_conditions(self):
         rule_id = "TC-FT-003"
         rule_name = "Multiple Conditions Rule"
@@ -99,16 +94,11 @@ class TestRuleConfiguration:
         schema_str = '{"type": "object", "properties": {}}'
         await self.rule_config_page.navigate()
         self.rule_config_page.define_rule_with_multiple_conditions(rule_id, rule_name, trigger_type, action_type, amount, conditions, schema_str)
-
-        # Simulate deposit from 'salary' when balance is 900 (should NOT execute transfer)
         self.rule_config_page.simulate_deposit(balance=900, deposit=100, source="salary")
         self.rule_config_page.verify_transfer_not_executed()
-
-        # Simulate deposit from 'salary' when balance is 1200 (should execute transfer)
         self.rule_config_page.simulate_deposit(balance=1200, deposit=100, source="salary")
         self.rule_config_page.verify_transfer_executed()
 
-    # --- TC-FT-004: Error Handling ---
     async def test_rule_missing_trigger(self):
         rule_id = "TC-FT-004-MissingTrigger"
         rule_name = "Missing Trigger Rule"
@@ -126,7 +116,6 @@ class TestRuleConfiguration:
         await self.rule_config_page.navigate()
         self.rule_config_page.submit_rule_unsupported_action(rule_id, rule_name, trigger_type, schema_str)
 
-    # --- TC-FT-009: Store and Verify Valid Rule with Specific Date ---
     async def test_store_and_verify_valid_rule_specific_date(self):
         rule_id = "TC-FT-009"
         rule_name = "Valid Rule Specific Date"
@@ -142,7 +131,6 @@ class TestRuleConfiguration:
         self.rule_config_page.define_and_store_valid_rule_specific_date(rule_id, rule_name, date_str, amount, schema_str)
         self.rule_config_page.verify_rule_stored(rule_id, expected_rule)
 
-    # --- TC-FT-010: Unconditional Execution After Deposit ---
     async def test_define_rule_after_deposit_empty_conditions_and_trigger(self):
         rule_id = "TC-FT-010"
         rule_name = "After Deposit Empty Conditions"
@@ -153,11 +141,7 @@ class TestRuleConfiguration:
         self.rule_config_page.define_rule_after_deposit_empty_conditions(rule_id, rule_name, amount, schema_str)
         self.rule_config_page.trigger_rule_and_verify_unconditional_execution(deposit_amount)
 
-    # --- TC_SCRUM158_03: Recurring Interval Trigger Rule Creation and Scheduling Verification ---
     async def test_create_and_verify_recurring_interval_rule(self):
-        """
-        TC_SCRUM158_03: Create a schema with a recurring interval trigger (e.g., weekly), submit, verify scheduling logic
-        """
         rule_id = "TC_SCRUM158_03"
         rule_name = "Recurring Interval Rule"
         interval_value = "weekly"
@@ -168,11 +152,7 @@ class TestRuleConfiguration:
         await self.rule_config_page.create_recurring_interval_rule(rule_id, rule_name, interval_value, condition_operator, condition_value, action_account, action_amount)
         assert self.rule_config_page.verify_rule_scheduling(), "Rule scheduling logic verification failed."
 
-    # --- TC_SCRUM158_04: Rule Creation with Missing Trigger and Error Validation ---
     async def test_submit_rule_without_trigger_and_verify_error(self):
-        """
-        TC_SCRUM158_04: Prepare a schema missing the 'trigger' field, attempt to create rule, verify error handling
-        """
         rule_id = "TC_SCRUM158_04"
         rule_name = "Missing Trigger Rule"
         condition_operator = "<"
@@ -181,3 +161,28 @@ class TestRuleConfiguration:
         action_amount = 50
         await self.rule_config_page.submit_rule_without_trigger(rule_id, rule_name, condition_operator, condition_value, action_account, action_amount)
         assert self.rule_config_page.verify_missing_trigger_error(), "Missing trigger error was not displayed as expected."
+
+    # --- TC_SCRUM158_07: Required Fields Only ---
+    async def test_required_fields_only_rule(self):
+        """
+        TC_SCRUM158_07: Prepare a schema with only required fields (manual trigger, amount condition equals 1, transfer action to account G with amount 1), submit, and verify rule creation.
+        """
+        trigger_type = 'manual'
+        condition_type = 'amount'
+        condition_operator = '=='
+        condition_value = 1
+        action_type = 'transfer'
+        action_account = 'G'
+        action_amount = 1
+        await self.rule_config_page.create_rule_required_fields(trigger_type, condition_type, condition_operator, condition_value, action_type, action_account, action_amount)
+        assert await self.rule_config_page.verify_rule_creation(trigger_type, condition_type, condition_operator, condition_value, action_type, action_account, action_amount), 'Required fields only rule was not created as expected.'
+
+    # --- TC_SCRUM158_08: Large Metadata Field ---
+    async def test_large_metadata_field_rule(self):
+        """
+        TC_SCRUM158_08: Prepare a schema with a large metadata field (manual trigger, metadata string of 10,000 characters), submit, and verify rule creation and performance.
+        """
+        trigger_type = 'manual'
+        metadata = 'A' * 10000
+        await self.rule_config_page.create_rule_large_metadata(trigger_type, metadata)
+        assert await self.rule_config_page.verify_rule_large_metadata(trigger_type, metadata), 'Large metadata rule was not created or verified as expected.'
