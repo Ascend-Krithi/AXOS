@@ -9,7 +9,6 @@ class RuleManagerPage:
         self.rule_json_input = (By.ID, 'rule-json-input')  # Placeholder locator
         self.submit_rule_button = (By.ID, 'submit-rule-btn')  # Placeholder locator
         self.acceptance_message = (By.CSS_SELECTOR, 'div.rule-acceptance-msg')  # Placeholder locator
-        self.rejection_message = (By.CSS_SELECTOR, 'div.rule-rejection-msg')  # Placeholder locator (NEW)
 
     def enter_rule_json(self, rule_json):
         rule_input = WebDriverWait(self.driver, 10).until(
@@ -32,6 +31,14 @@ class RuleManagerPage:
 
     def verify_rule_rejected(self):
         rejection = WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.rejection_message)
+            EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.rule-rejection-msg'))
         )
-        return 'rejected' in rejection.text.lower() or 'not supported' in rejection.text.lower()
+        return 'rejected' in rejection.text.lower() or 'error' in rejection.text.lower()
+
+    def verify_existing_rules_intact(self):
+        # Placeholder: Implementation depends on how rules are listed/displayed
+        # E.g., check rule list or status
+        rules_list = WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, 'rules-list'))
+        )
+        return 'active' in rules_list.text.lower()
