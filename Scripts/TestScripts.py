@@ -64,3 +64,43 @@ class TestRuleConfiguration:
         await self.rule_config_page.create_rule(rule_name, conditions, trigger_type, action_type)
         error_msg = await self.rule_config_page.get_error_message()
         assert error_msg == "Unsupported action type"
+
+    async def test_define_percentage_deposit_rule_and_simulate_transfer(self):
+        # TC-FT-005: Define a rule for 10% of deposit action and simulate deposit to verify transfer
+        await self.rule_config_page.navigate()
+        rule_name = "DepositPercentTransferRule"
+        conditions = [
+            {"field": "deposit_amount", "operator": ">", "value": 0}
+        ]
+        trigger_type = "deposit"
+        action_type = "transfer"
+        action_params = {"percent": 10}
+        await self.rule_config_page.create_rule(rule_name, conditions, trigger_type, action_type, action_params=action_params)
+        assert await self.rule_config_page.get_success_message() == "Rule created successfully"
+
+        # Simulate deposit of 500 units, expect transfer of 50 units
+        await self.rule_mgmt_page.navigate()
+        await self.rule_mgmt_page.simulate_deposit(amount=500, source="generic")
+        transferred_amount = await self.rule_mgmt_page.get_last_transfer_amount(rule_name)
+        assert transferred_amount == 50, f"Expected transfer of 50 units, got {transferred_amount}"
+
+    async def test_define_unsupported_rule_type_and_validate_system_response(self):
+        # TC-FT-006: Define a rule with unsupported type 'currency_conversion' and validate system response
+        await self.rule_config_page.navigate()
+        rule_name = "UnsupportedRuleType"
+        conditions = [
+            {"field": "deposit_amount", "operator": ">", "value": 100}
+        ]
+        trigger_type = "currency_conversion"
+        action_type = "notify"
+        await self.rule_config_page.create_rule(rule_name, conditions, trigger_type, action_type)
+        error_msg = await self.rule_config_page.get_error_message()
+        # The system should either show a graceful error or accept and process
+        assert error_msg in ["Unsupported rule type", "Rule created successfully"], f"Unexpected system response: {error_msg}"
+
+        # Ensure existing rules still function
+        await self.rule_mgmt_page.navigate()
+        existing_rule_name = "DepositPercentTransferRule"
+        await self.rule_mgmt_page.simulate_deposit(amount=500, source="generic")
+        transferred_amount = await self.rule_mgmt_page.get_last_transfer_amount(existing_rule_name)
+        assert transferred_amount == 50, f"Existing rule failed after unsupported rule type, got {transferred_amount}"
