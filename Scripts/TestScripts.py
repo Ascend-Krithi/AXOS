@@ -13,8 +13,6 @@ def driver():
     yield driver
     driver.quit()
 
-# ... [existing test methods here] ...
-
 # TC_LOGIN_005: Empty Credentials Error Handling
 def test_login_empty_credentials_error(driver):
     """
@@ -26,7 +24,7 @@ def test_login_empty_credentials_error(driver):
     login_page = LoginPage(driver)
     login_page.navigate_to_login_page("https://axos.example.com/login")
     assert driver.current_url.endswith("/login")
-    error_message = login_page.validate_empty_credentials()
+    error_message = login_page.login_with_empty_fields_and_check_error()
     assert error_message is not None, "Error message should be displayed for empty credentials."
     assert "required" in error_message.lower(), f"Expected 'required' in error message, got: {error_message}"
     assert driver.current_url.endswith("/login"), "User should remain on login page."
@@ -46,18 +44,8 @@ def test_login_remember_me_session_persistence(driver):
     login_url = "https://axos.example.com/login"
     email = "user@example.com"
     password = "ValidPass123"
-    # Step 1-4: Login with 'Remember Me'
     login_page.navigate_to_login_page(login_url)
     assert driver.current_url.endswith("/login")
     login_page.login_with_credentials(email, password, remember_me=True)
-    # Step 5: Close and reopen browser (simulate by getting cookies, restarting driver, and adding cookies)
-    cookies = driver.get_cookies()
-    driver.quit()
-    driver2 = webdriver.Chrome()
-    driver2.get(login_url)
-    for cookie in cookies:
-        driver2.add_cookie(cookie)
-    driver2.get(dashboard_url)
-    dashboard_page = DashboardPage(driver2)
-    assert dashboard_page.is_dashboard_displayed(), "Dashboard should be displayed, session persisted."
-    driver2.quit()
+    session_persisted = login_page.verify_remember_me_persistence(login_url, email, password)
+    assert session_persisted, "Session should persist and user should remain logged in."
