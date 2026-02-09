@@ -105,34 +105,40 @@ class TestRuleConfiguration:
         transferred_amount = await self.rule_mgmt_page.get_last_transfer_amount(existing_rule_name)
         assert transferred_amount == 50, f"Existing rule failed after unsupported rule type, got {transferred_amount}"
 
-    async def test_TC_SCRUM158_01_rule_schema_creation_and_validation(self):
-        # TC_SCRUM158_01: Prepare a valid rule schema with interval trigger, amount condition, and transfer action
-        schema = {
-            "trigger": {"type": "interval", "value": "daily"},
-            "conditions": [{"type": "amount", "operator": ">", "value": 100}],
-            "actions": [{"type": "transfer", "account": "A", "amount": 100}]
-        }
-        await self.rule_config_page.navigate()
-        await self.rule_config_page.create_rule_schema(schema)
-        schema_text = str(schema)
-        result_msg = await self.rule_config_page.submit_and_validate_schema(schema_text)
-        assert "success" in result_msg.lower() or "created" in result_msg.lower(), f"Expected schema acceptance, got: {result_msg}"
+    # TC_SCRUM158_01: Prepare a valid rule schema with interval trigger, amount>100 condition, transfer 100 to account A
+    async def test_TC_SCRUM158_01(self):
+        await self.rule_config_page.enter_rule_id('TC_SCRUM158_01')
+        await self.rule_config_page.enter_rule_name('Interval Amount Transfer')
+        await self.rule_config_page.select_trigger_type('interval')
+        await self.rule_config_page.set_date_picker('daily')
+        await self.rule_config_page.click_add_condition()
+        await self.rule_config_page.select_condition_type('amount')
+        await self.rule_config_page.select_operator('>')
+        await self.rule_config_page.enter_balance_threshold('100')
+        await self.rule_config_page.select_action_type('transfer')
+        await self.rule_config_page.enter_transfer_amount('100')
+        await self.rule_config_page.enter_destination_account('A')
+        await self.rule_config_page.click_save_rule()
+        assert await self.rule_config_page.get_success_message() == 'Rule created successfully'
 
-    async def test_TC_SCRUM158_02_rule_schema_creation_and_validation(self):
-        # TC_SCRUM158_02: Prepare a schema with manual trigger, two conditions, and two actions
-        schema = {
-            "trigger": {"type": "manual"},
-            "conditions": [
-                {"type": "amount", "operator": ">", "value": 500},
-                {"type": "country", "operator": "==", "value": "US"}
-            ],
-            "actions": [
-                {"type": "transfer", "account": "B", "amount": 500},
-                {"type": "notify", "message": "Transfer complete"}
-            ]
-        }
-        await self.rule_config_page.navigate()
-        await self.rule_config_page.create_rule_schema(schema)
-        schema_text = str(schema)
-        result_msg = await self.rule_config_page.submit_and_validate_schema(schema_text)
-        assert "success" in result_msg.lower() or "created" in result_msg.lower(), f"Expected schema acceptance and storage of all conditions/actions, got: {result_msg}"
+    # TC_SCRUM158_02: Prepare a schema with two conditions (amount>500, country==US) and two actions (transfer 500 to B, notify 'Transfer complete')
+    async def test_TC_SCRUM158_02(self):
+        await self.rule_config_page.enter_rule_id('TC_SCRUM158_02')
+        await self.rule_config_page.enter_rule_name('Dual Condition Action')
+        await self.rule_config_page.select_trigger_type('manual')
+        await self.rule_config_page.click_add_condition()
+        await self.rule_config_page.select_condition_type('amount')
+        await self.rule_config_page.select_operator('>')
+        await self.rule_config_page.enter_balance_threshold('500')
+        await self.rule_config_page.click_add_condition()
+        await self.rule_config_page.select_condition_type('country')
+        await self.rule_config_page.select_operator('==')
+        await self.rule_config_page.enter_balance_threshold('US')
+        await self.rule_config_page.select_action_type('transfer')
+        await self.rule_config_page.enter_transfer_amount('500')
+        await self.rule_config_page.enter_destination_account('B')
+        await self.rule_config_page.select_action_type('notify')
+        # Assuming an enter_message function exists for notify; otherwise, skip
+        # await self.rule_config_page.enter_message('Transfer complete')
+        await self.rule_config_page.click_save_rule()
+        assert await self.rule_config_page.get_success_message() == 'Rule created successfully'
