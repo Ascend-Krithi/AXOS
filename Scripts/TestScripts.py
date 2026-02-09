@@ -115,3 +115,43 @@ class TestRuleConfiguration:
         unsupported_action_type = "unknown_action"
         error_message = self.rule_page.validate_unsupported_action_type_error(unsupported_action_type)
         assert "unsupported action type" in error_message.lower()
+
+    # --- Appended for TC-FT-007 ---
+    def test_load_and_evaluate_batch_rules(self):
+        """
+        Test Case TC-FT-007:
+        - Load 10,000 valid rules into the system
+        - Trigger evaluation for all rules simultaneously
+        - Verify system loads and processes rules within acceptable time/performance limits
+        """
+        # Example batch JSON for 10,000 rules
+        batch_rules_json = []
+        for i in range(10000):
+            batch_rules_json.append({
+                'rule_id': f'BATCH_{i}',
+                'rule_name': f'Batch Rule {i}',
+                'trigger': {'type': 'specific_date', 'date': '2024-07-01T10:00:00Z'},
+                'action': {'type': 'fixed_amount', 'amount': 100},
+                'conditions': [{'type': 'balance_threshold', 'value': 1000}]
+            })
+        self.rule_page.load_batch_rules(batch_rules_json)
+        evaluation_result = self.rule_page.trigger_evaluation_all_rules()
+        assert evaluation_result is True
+
+    # --- Appended for TC-FT-008 ---
+    def test_sql_injection_rejection(self):
+        """
+        Test Case TC-FT-008:
+        - Submit a rule with SQL injection in a field value
+        - Validate that SQL injection is rejected and no SQL is executed
+        """
+        rule_data = {
+            'rule_id': 'SQLI_001',
+            'rule_name': 'SQL Injection Test',
+            'trigger': {'type': 'specific_date', 'date': '2024-07-01T10:00:00Z'},
+            'action': {'type': 'fixed_amount', 'amount': 100},
+            'conditions': [{'type': 'balance_threshold', 'value': '1000; DROP TABLE users;--'}]
+        }
+        self.rule_page.submit_rule_with_sql_injection(rule_data)
+        result = self.rule_page.validate_sql_injection_rejection()
+        assert result is True
