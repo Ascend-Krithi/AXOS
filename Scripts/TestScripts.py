@@ -114,3 +114,26 @@ class TestRuleManagement:
         self.rule_management_page.submit_rule_with_unsupported_action(rule_data_unsupported_action)
         error = self.rule_management_page.get_error_for_unsupported_action()
         assert error is not None and "unsupported action" in error.lower(), "Expected error for unsupported action type."
+
+    def test_tc_ft_007(self):
+        # Step 1: Load 10,000 valid rules
+        import time
+        batch_rules = [{"trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"}, "action": {"type": "fixed_amount", "amount": 100}, "conditions": [{"type": "balance_threshold", "value": 1000}]}] * 10000
+        self.rule_management_page.go_to_rule_management()
+        load_time = self.rule_management_page.load_batch_rules(batch_rules)
+        assert load_time < 60, f"Batch rule loading took too long: {load_time} seconds"
+
+        # Step 2: Trigger evaluation for all rules
+        eval_time = self.rule_management_page.trigger_evaluation_for_all_rules()
+        assert eval_time < 120, f"Batch rule evaluation took too long: {eval_time} seconds"
+
+    def test_tc_ft_008(self):
+        # Step 1: Submit a rule with SQL injection in field value
+        sql_injection_rule = {
+            "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"},
+            "action": {"type": "fixed_amount", "amount": 100},
+            "conditions": [{"type": "balance_threshold", "value": "1000; DROP TABLE users;--"}]
+        }
+        self.rule_management_page.go_to_rule_management()
+        error = self.rule_management_page.submit_rule_with_sql_injection(sql_injection_rule)
+        assert error is not None and ("sql" in error.lower() or "invalid" in error.lower()), "Expected SQL injection rejection error message."
