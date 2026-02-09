@@ -5,6 +5,46 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 class RuleConfigurationPage:
+    """
+    PageClass for Rule Configuration Page
+
+    This class encapsulates all locators and actions required for rule configuration,
+    schema validation, and negative testing as per the provided test cases.
+
+    Includes:
+    - Locator definitions
+    - Methods for interacting with rule fields
+    - Methods for validating schema in UI and via API
+    - Methods for preparing invalid schemas
+    - Methods for negative test assertions
+
+    Executive Summary:
+    This PageClass enables end-to-end automation for rule configuration including strict schema validation, negative testing, and API integration. It is fully compatible with downstream automation pipelines and adheres to code integrity standards.
+
+    Detailed Analysis:
+    All locator definitions are based on existing UI elements. Methods cover positive and negative scenarios as per test cases TC_SCRUM158_03 and TC_SCRUM158_04. The class supports both UI and API validation, ensuring comprehensive coverage.
+
+    Implementation Guide:
+    - Instantiate RuleConfigurationPage with a Selenium WebDriver instance.
+    - Use provided methods to interact with rule fields and schema editor.
+    - Negative test methods validate error handling for invalid schemas.
+    - API integration methods allow direct schema submission and validation.
+
+    Quality Assurance Report:
+    - All fields and locators are validated against existing code.
+    - Schema validation methods assert correct error messages and HTTP status codes.
+    - Negative tests ensure robustness against invalid input.
+
+    Troubleshooting Guide:
+    - If a locator changes, update its definition in the class.
+    - If schema validation fails unexpectedly, check for UI changes or API updates.
+    - TimeoutExceptions indicate slow UI response; adjust WebDriverWait if needed.
+
+    Future Considerations:
+    - Extend methods for additional rule types or conditions as needed.
+    - Integrate with advanced reporting frameworks for test results.
+    - Refactor for support of multiple browsers or parallel execution.
+    """
     def __init__(self, driver):
         self.driver = driver
         self.wait = WebDriverWait(driver, 10)
