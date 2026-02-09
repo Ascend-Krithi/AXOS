@@ -36,13 +36,11 @@ class TestRuleConfiguration:
         """
         self.rule_page.navigate_to_rule_configuration()
         self.rule_page.click_create_rule()
-        # Fill in rule details with invalid trigger
         self.rule_page.enter_rule_name('Invalid Trigger Rule')
         self.rule_page.select_trigger('invalid_trigger_value')
         self.rule_page.add_condition({'type': 'valid_type', 'params': {'key': 'value'}})
         self.rule_page.add_action({'type': 'valid_action', 'params': {'key': 'value'}})
         self.rule_page.submit_rule()
-        # Wait for error feedback
         error_message = self.rule_page.get_error_message()
         assert error_message is not None, 'Expected error message for invalid trigger'
         assert '400' in error_message or 'Bad Request' in error_message or 'invalid trigger' in error_message.lower()
@@ -54,13 +52,64 @@ class TestRuleConfiguration:
         """
         self.rule_page.navigate_to_rule_configuration()
         self.rule_page.click_create_rule()
-        # Fill in rule details with missing condition params
         self.rule_page.enter_rule_name('Missing Condition Params Rule')
         self.rule_page.select_trigger('valid_trigger')
-        self.rule_page.add_condition({'type': 'some_type', 'params': {}})  # Missing required params
+        self.rule_page.add_condition({'type': 'some_type', 'params': {}})
         self.rule_page.add_action({'type': 'valid_action', 'params': {'key': 'value'}})
         self.rule_page.submit_rule()
-        # Wait for error feedback
         error_message = self.rule_page.get_error_message()
         assert error_message is not None, 'Expected error message for missing condition parameters'
         assert '400' in error_message or 'Bad Request' in error_message or 'missing' in error_message.lower()
+
+    def test_create_rule_with_max_conditions_actions(self):
+        """
+        Test Case TC_SCRUM158_07: Create rule with maximum supported conditions and actions (10 each).
+        Steps:
+        - Prepare a rule schema with 10 conditions and 10 actions.
+        - Validate schema.
+        - Submit rule.
+        - Retrieve and validate all conditions/actions are persisted.
+        """
+        rule_id = 'max_conditions_actions_rule'
+        rule_name = 'Max Conditions/Actions Rule'
+        trigger_info = {'type': 'deposit'}
+        conditions = [
+            {'type': 'balance_above', 'threshold': 1000 + i*100, 'source': 'Bank', 'operator': 'greater_than'} for i in range(10)
+        ]
+        actions = [
+            {'type': 'transfer', 'amount': 50 + i*10, 'destination': f'acct_{100+i}'} for i in range(10)
+        ]
+        schema_dict = {'trigger': 'deposit', 'conditions': conditions, 'actions': actions}
+        validation_result = self.rule_page.configure_rule(rule_id, rule_name, trigger_info, conditions, actions, schema_dict)
+        assert validation_result['success'] is not None, 'JSON schema should be valid.'
+        assert validation_result['error'] is None, f'Unexpected schema error: {validation_result['error']}'
+        created = self.rule_page.create_rule(rule_id, rule_name, trigger_info, conditions, actions, schema_dict)
+        assert created, 'Rule should be created successfully.'
+        # Retrieve and validate all conditions/actions are persisted
+        # This would be implemented with an API call or UI check, placeholder below:
+        persisted_rule = self.rule_page.retrieve_rule(rule_id)
+        assert len(persisted_rule['conditions']) == 10, 'Should persist 10 conditions.'
+        assert len(persisted_rule['actions']) == 10, 'Should persist 10 actions.'
+
+    def test_create_rule_with_empty_conditions_actions(self):
+        """
+        Test Case TC_SCRUM158_08: Create rule with empty conditions and actions arrays.
+        Steps:
+        - Prepare a rule schema with empty conditions and actions.
+        - Validate schema.
+        - Submit rule.
+        - Check API response (error or acceptance).
+        """
+        rule_id = 'empty_conditions_actions_rule'
+        rule_name = 'Empty Conditions/Actions Rule'
+        trigger_info = {'type': 'deposit'}
+        conditions = []
+        actions = []
+        schema_dict = {'trigger': 'deposit', 'conditions': conditions, 'actions': actions}
+        validation_result = self.rule_page.configure_rule(rule_id, rule_name, trigger_info, conditions, actions, schema_dict)
+        # Depending on business logic, schema may be valid or invalid
+        if validation_result['success']:
+            created = self.rule_page.create_rule(rule_id, rule_name, trigger_info, conditions, actions, schema_dict)
+            assert created, 'Rule should be created or rejected as per business rule.'
+        else:
+            assert validation_result['error'] is not None, 'Expected error for empty conditions/actions.'
