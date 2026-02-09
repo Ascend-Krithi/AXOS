@@ -59,10 +59,12 @@ class TestScripts(unittest.TestCase):
           4. Assert 'Email required' error is displayed, and user is not logged in.
         """
         login_page = LoginPage(self.driver)
-        login_page.navigate_to_login_page("https://your-app-url/login")  # Replace with actual URL as needed
-        login_page.login_with_empty_email("ValidPassword123")
-        login_page.validate_email_required_error()
-        self.assertFalse(login_page.is_user_logged_in(), "User should not be logged in when email is empty.")
+        login_page.navigate('https://your-app-url/login')  # Replace with actual URL as needed
+        login_page.enter_username("")
+        login_page.enter_password("ValidPassword123")
+        login_page.click_login()
+        self.assertTrue(login_page.validate_email_required_error(), "'Email required' error should be displayed.")
+        self.assertFalse(login_page.is_login_successful(), "User should not be logged in if email is missing.")
 
     def test_TC_Login_04_password_required_error(self):
         """
@@ -74,7 +76,41 @@ class TestScripts(unittest.TestCase):
           4. Assert 'Password required' error is displayed, and user is not logged in.
         """
         login_page = LoginPage(self.driver)
-        login_page.navigate_to_login_page("https://your-app-url/login")  # Replace with actual URL as needed
-        login_page.login_with_empty_password("user@example.com")
-        login_page.validate_password_required_error()
-        self.assertFalse(login_page.is_user_logged_in(), "User should not be logged in when password is empty.")
+        login_page.navigate('https://your-app-url/login')  # Replace with actual URL as needed
+        login_page.enter_username("user@example.com")
+        login_page.enter_password("")
+        login_page.click_login()
+        self.assertTrue(login_page.validate_password_required_error(), "'Password required' error should be displayed.")
+        self.assertFalse(login_page.is_login_successful(), "User should not be logged in if password is missing.")
+
+    def test_TC_Login_05_empty_fields_error(self):
+        """
+        TC_Login_05: Leave both email and password fields empty, click Login, validate error messages 'Email required' and 'Password required'.
+        Steps:
+          1. Navigate to login page.
+          2. Leave both email and password fields empty.
+          3. Click the 'Login' button.
+          4. Assert both 'Email required' and 'Password required' errors are displayed, and user is not logged in.
+        """
+        login_page = LoginPage(self.driver)
+        login_page.navigate('https://your-app-url/login')  # Replace with actual URL as needed
+        result = login_page.login_with_empty_fields()
+        self.assertTrue(result, "Both 'Email required' and 'Password required' errors should be displayed.")
+        self.assertFalse(login_page.is_login_successful(), "User should not be logged in if both fields are empty.")
+
+    def test_TC_Login_06_remember_me_session_persistence(self):
+        """
+        TC_Login_06: Enter valid credentials, select 'Remember Me', click Login, validate session persists after browser restart.
+        Steps:
+          1. Navigate to login page.
+          2. Enter valid credentials and select 'Remember Me' checkbox.
+          3. Click the 'Login' button.
+          4. Simulate browser restart (call verify_session_persistence).
+          5. Assert user remains logged in (session persists).
+        """
+        login_page = LoginPage(self.driver)
+        login_page.navigate('https://your-app-url/login')  # Replace with actual URL as needed
+        login_page.login('user@example.com', 'ValidPassword123', remember_me=True)
+        self.assertTrue(login_page.is_login_successful(), "User should be logged in with valid credentials and 'Remember Me' selected.")
+        session_persists = login_page.verify_session_persistence()
+        self.assertTrue(session_persists, "Session should persist after browser restart with 'Remember Me' enabled.")
