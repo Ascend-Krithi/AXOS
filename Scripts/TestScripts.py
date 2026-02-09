@@ -95,3 +95,75 @@ class TestRuleConfiguration:
         status_code, response = self.rule_config_page.submit_rule_schema_api(schema, api_url, headers)
         assert status_code == 400, f"API should return 400 Bad Request, got {status_code}. Response: {response}"
         assert 'incomplete condition' in str(response), "Expected error about incomplete condition in response."
+
+    def test_TC_SCRUM158_03_rule_schema_with_metadata(self):
+        """
+        Test Case TC_SCRUM158_03
+        Steps:
+        1. Prepare a rule schema with metadata fields (description, tags).
+        2. Submit the schema (POST /rules).
+        3. Retrieve the rule (GET /rules/<rule_id>) and check metadata.
+        4. Assert metadata matches input.
+        """
+        api_url = "http://localhost:8000/rules"
+        headers = {"Content-Type": "application/json"}
+        schema = {
+            "trigger": "deposit",
+            "conditions": [
+                {
+                    "type": "amount_above",
+                    "balance_limit": 1000,
+                    "operator": "greater_than"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "transfer",
+                    "fixed-amount": 500,
+                    "target-account-id": "ACC123"
+                }
+            ],
+            "metadata": {
+                "description": "Transfer rule",
+                "tags": ["finance", "auto"]
+            }
+        }
+        status_code, response = self.rule_config_page.submit_rule_schema_api(schema, api_url, headers)
+        assert status_code == 201, f"Rule creation failed, got {status_code}. Response: {response}"
+        rule_id = response.get('id')
+        assert rule_id, "Rule ID not returned from API."
+        get_url = f"{api_url}/{rule_id}"
+        status_code_get, response_get = self.rule_config_page.submit_rule_schema_api({}, get_url, headers)
+        assert status_code_get == 200, f"Rule retrieval failed, got {status_code_get}. Response: {response_get}"
+        assert response_get.get('metadata', {}).get('description') == schema['metadata']['description'], "Metadata description mismatch."
+        assert response_get.get('metadata', {}).get('tags') == schema['metadata']['tags'], "Metadata tags mismatch."
+
+    def test_TC_SCRUM158_04_rule_schema_missing_trigger(self):
+        """
+        Test Case TC_SCRUM158_04
+        Steps:
+        1. Prepare a rule schema missing the 'trigger' field.
+        2. Submit the schema (POST /rules).
+        3. Assert API returns 400 Bad Request with error about missing field.
+        """
+        api_url = "http://localhost:8000/rules"
+        headers = {"Content-Type": "application/json"}
+        schema = {
+            "conditions": [
+                {
+                    "type": "amount_above",
+                    "balance_limit": 1000,
+                    "operator": "greater_than"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "transfer",
+                    "fixed-amount": 500,
+                    "target-account-id": "ACC123"
+                }
+            ]
+        }
+        status_code, response = self.rule_config_page.submit_rule_schema_api(schema, api_url, headers)
+        assert status_code == 400, f"API should return 400 Bad Request, got {status_code}. Response: {response}"
+        assert 'missing field' in str(response), "Expected error about missing trigger field in response."
