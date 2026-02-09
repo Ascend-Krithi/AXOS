@@ -1,1 +1,1 @@
-{"qa_status": "Validated. All fields and locators referenced as per Locators.json. Existing logic preserved. New methods appended. Ready for downstream agents."}
+{"qa_status": "Validated. All fields and locators referenced as per RuleConfigurationPage.py.locators.json. Existing logic preserved. New methods appended for TC_SCRUM158_05 and TC_SCRUM158_06. Ready for downstream agents."}

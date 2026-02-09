@@ -6,6 +6,7 @@ This class provides methods to automate the creation, retrieval, and triggering 
 
 CASE-Update: Appended new methods for test cases TC_SCRUM158_01 and TC_SCRUM158_02, without altering existing logic.
 CASE-Update: Appended methods for TC_SCRUM158_03 and TC_SCRUM158_04 (recurring interval trigger, missing trigger error handling).
+CASE-Update: Appended methods for TC_SCRUM158_05 (unsupported trigger type error handling) and TC_SCRUM158_06 (maximum allowed conditions/actions validation).
 
 Documentation:
 - Each method includes docstrings describing parameters and expected behavior.
@@ -198,3 +199,114 @@ class RuleConfigurationPage:
         """
         error_message = self.create_rule_missing_trigger(rule_data)
         return 'missing required field' in error_message.lower() or 'trigger' in error_message.lower()
+
+    # --- Appended methods for TC_SCRUM158_05 ---
+    def create_rule_with_unsupported_trigger(self, rule_data):
+        """
+        Attempt to create a rule with an unsupported trigger type and validate error handling.
+        Args:
+            rule_data (dict): Rule data with unsupported trigger type.
+        Returns:
+            str: Error message shown in UI.
+        """
+        trigger = rule_data.get('trigger', {})
+        self.driver.find_element(By.ID, 'trigger-type-select').click()
+        # Try to select unsupported trigger type
+        try:
+            self.driver.find_element(By.ID, f"trigger-type-{trigger['type']}-option").click()
+        except Exception:
+            # If option not present, proceed to save
+            pass
+        # Fill other fields if present
+        conditions = rule_data.get('conditions', [])
+        for cond in conditions:
+            self.driver.find_element(By.ID, 'add-condition-link').click()
+            self.driver.find_element(By.ID, 'condition-type-select').click()
+            self.driver.find_element(By.ID, f"condition-type-{cond['type']}-option").click()
+            self.driver.find_element(By.ID, 'condition-operator-select').click()
+            self.driver.find_element(By.ID, f"condition-operator-{cond['operator']}-option").click()
+            self.driver.find_element(By.NAME, 'condition-value').send_keys(str(cond['value']))
+        actions = rule_data.get('actions', [])
+        for action in actions:
+            self.driver.find_element(By.ID, 'add-action-link').click()
+            self.driver.find_element(By.ID, 'action-type-select').click()
+            self.driver.find_element(By.ID, f"action-type-{action['type']}-option").click()
+            self.driver.find_element(By.NAME, 'action-account').send_keys(action['account'])
+            self.driver.find_element(By.NAME, 'action-amount').send_keys(str(action['amount']))
+        # Save rule
+        self.driver.find_element(By.CSS_SELECTOR, "button[data-testid='save-rule-btn']").click()
+        # Wait for error message
+        error_elem = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '.alert-danger')))
+        return error_elem.text
+
+    def verify_rule_rejection_for_unsupported_trigger(self, rule_data, expected_error_substring="unsupported trigger type"):
+        """
+        Validate that a rule with an unsupported trigger type is not created and error message is shown.
+        Args:
+            rule_data (dict): Rule data with unsupported trigger type.
+            expected_error_substring (str): Substring expected in error message.
+        Returns:
+            bool: True if error message contains expected substring, False otherwise.
+        """
+        error_message = self.create_rule_with_unsupported_trigger(rule_data)
+        return expected_error_substring.lower() in error_message.lower()
+
+    # --- Appended methods for TC_SCRUM158_06 ---
+    def create_rule_with_max_conditions_actions(self, rule_data, max_conditions=10, max_actions=10):
+        """
+        Attempt to create a rule with the maximum allowed conditions and actions.
+        Args:
+            rule_data (dict): Rule data with 'trigger', 'conditions', and 'actions'.
+            max_conditions (int): Maximum allowed conditions.
+            max_actions (int): Maximum allowed actions.
+        Returns:
+            str: Success or error message shown in UI.
+        """
+        # Fill trigger
+        trigger = rule_data.get('trigger', {})
+        self.driver.find_element(By.ID, 'trigger-type-select').click()
+        self.driver.find_element(By.ID, f"trigger-type-{trigger['type']}-option").click()
+        # Add maximum conditions
+        conditions = rule_data.get('conditions', [])
+        for idx, cond in enumerate(conditions):
+            if idx >= max_conditions:
+                break
+            self.driver.find_element(By.ID, 'add-condition-link').click()
+            self.driver.find_element(By.ID, 'condition-type-select').click()
+            self.driver.find_element(By.ID, f"condition-type-{cond['type']}-option").click()
+            self.driver.find_element(By.ID, 'condition-operator-select').click()
+            self.driver.find_element(By.ID, f"condition-operator-{cond['operator']}-option").click()
+            self.driver.find_element(By.NAME, 'condition-value').send_keys(str(cond['value']))
+        # Add maximum actions
+        actions = rule_data.get('actions', [])
+        for idx, action in enumerate(actions):
+            if idx >= max_actions:
+                break
+            self.driver.find_element(By.ID, 'add-action-link').click()
+            self.driver.find_element(By.ID, 'action-type-select').click()
+            self.driver.find_element(By.ID, f"action-type-{action['type']}-option").click()
+            self.driver.find_element(By.NAME, 'action-account').send_keys(action['account'])
+            self.driver.find_element(By.NAME, 'action-amount').send_keys(str(action['amount']))
+        # Save rule
+        self.driver.find_element(By.CSS_SELECTOR, "button[data-testid='save-rule-btn']").click()
+        # Wait for success or error message
+        try:
+            success_elem = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '.alert-success')))
+            return success_elem.text
+        except Exception:
+            error_elem = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '.alert-danger')))
+            return error_elem.text
+
+    def verify_rule_creation_with_max_conditions_actions(self, rule_data, max_conditions=10, max_actions=10):
+        """
+        Validate that a rule with maximum allowed conditions/actions is either created successfully or rejected with proper error.
+        Args:
+            rule_data (dict): Rule data with 'trigger', 'conditions', and 'actions'.
+            max_conditions (int): Maximum allowed conditions.
+            max_actions (int): Maximum allowed actions.
+        Returns:
+            dict: {'success': bool, 'message': str}
+        """
+        message = self.create_rule_with_max_conditions_actions(rule_data, max_conditions, max_actions)
+        success = 'success' in message.lower() or 'created' in message.lower()
+        return {'success': success, 'message': message}
