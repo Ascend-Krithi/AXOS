@@ -110,3 +110,24 @@ class TestRuleConfiguration:
         existing_rule_id = "TCFT005"
         exec_result = self.rule_page.validate_existing_rules_execution(existing_rule_id)
         assert exec_result is not None and ("function" in exec_result.lower() or "success" in exec_result.lower()), "Existing rules did not function as expected"
+
+    # --- TC-FT-007: Bulk rule loading and evaluation ---
+    def test_load_and_evaluate_10000_rules(self, batch_rules_json_path):
+        """
+        Loads 10,000 valid rules and triggers evaluation for all rules simultaneously.
+        Uses RuleConfigurationPage.tc_load_and_evaluate_10000_rules.
+        """
+        load_time, eval_time, load_success, eval_success, load_message, eval_message = self.rule_page.tc_load_and_evaluate_10000_rules(batch_rules_json_path)
+        assert load_success, f"Failed to load rules: {load_message}"
+        assert eval_success, f"Evaluation failed: {eval_message}"
+        print(f"Loaded 10,000 rules in {load_time:.2f} seconds. Evaluation completed in {eval_time:.2f} seconds.")
+
+    # --- TC-FT-008: SQL injection protection ---
+    def test_submit_rule_with_sql_injection(self):
+        """
+        Submits a rule with SQL injection in a field value and verifies rejection.
+        Uses RuleConfigurationPage.tc_submit_rule_with_sql_injection.
+        """
+        success, message = self.rule_page.tc_submit_rule_with_sql_injection()
+        assert success, f"SQL injection was not properly rejected: {message}"
+        print(f"SQL injection test result: {message}")
