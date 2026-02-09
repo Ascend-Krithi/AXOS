@@ -39,5 +39,25 @@ class TestLogin(unittest.TestCase):
         error_shown = self.login_page.is_specific_error_message_displayed(["User not found", "Invalid credentials"])
         self.assertTrue(error_shown, 'Expected error message not shown for unregistered user')
 
+    def test_TC_LOGIN_001_valid_login(self):
+        # Step 1: Navigate to login page
+        self.login_page.navigate_to_login('https://example.com/login')
+        # Step 2: Enter valid credentials
+        self.login_page.enter_credentials('user@example.com', 'ValidPass123')
+        # Step 3: Click login
+        self.login_page.click_login()
+        # Assert user is logged in and redirected to dashboard
+        self.assertTrue(self.login_page.is_logged_in(), 'User was not logged in or dashboard not shown')
+
+    def test_TC_LOGIN_002_invalid_login(self):
+        # Step 1: Navigate to login page
+        self.login_page.navigate_to_login('https://example.com/login')
+        # Step 2: Enter valid email and invalid password
+        self.login_page.enter_credentials('user@example.com', 'WrongPass456')
+        # Step 3: Click login
+        self.login_page.click_login()
+        # Assert error message 'Invalid credentials' is shown
+        self.assertTrue(self.login_page.is_specific_error_message_displayed(["Invalid credentials"]), "Error message 'Invalid credentials' not shown")
+
 if __name__ == '__main__':
     unittest.main()
