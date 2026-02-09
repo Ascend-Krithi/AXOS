@@ -52,7 +52,6 @@ class TestLoginFunctionality:
         await self.login_page.navigate()
         await self.login_page.fill_email('')
 
-    # --- Appended Selenium Test Methods for TC_Login_03 and TC_Login_04 ---
     def test_TC_Login_03_empty_email(self):
         """
         Test Case TC_Login_03:
@@ -61,11 +60,10 @@ class TestLoginFunctionality:
         3. Click the 'Login' button.
         Expected: Error message displayed: 'Email required'. User is not logged in.
         """
-        self.login_page.navigate()
         error = self.login_page.login_with_empty_email("ValidPassword123")
-        assert error is not None, "Error message should be displayed when email is empty"
-        assert self.login_page.validate_error_message("Email required"), "Error message should be 'Email required'"
-        assert not self.dashboard_page.is_loaded(), "Dashboard should not be loaded when email is empty"
+        assert error is not None, "Error message should be displayed for empty email"
+        assert error == "Email required", f"Expected 'Email required', got '{error}'"
+        assert not self.dashboard_page.is_loaded(), "Dashboard should not be loaded after empty email login"
 
     def test_TC_Login_04_empty_password(self):
         """
@@ -75,11 +73,10 @@ class TestLoginFunctionality:
         3. Click the 'Login' button.
         Expected: Error message displayed: 'Password required'. User is not logged in.
         """
-        self.login_page.navigate()
         error = self.login_page.login_with_empty_password("user@example.com")
-        assert error is not None, "Error message should be displayed when password is empty"
-        assert self.login_page.validate_error_message("Password required"), "Error message should be 'Password required'"
-        assert not self.dashboard_page.is_loaded(), "Dashboard should not be loaded when password is empty"
+        assert error is not None, "Error message should be displayed for empty password"
+        assert error == "Password required", f"Expected 'Password required', got '{error}'"
+        assert not self.dashboard_page.is_loaded(), "Dashboard should not be loaded after empty password login"
 
 # --- Appended Selenium Test Methods for TC_SCRUM158_03 and TC_SCRUM158_04 ---
 
