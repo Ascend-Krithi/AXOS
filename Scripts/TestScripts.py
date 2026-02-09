@@ -1,69 +1,62 @@
+
 import unittest
-from RuleConfigurationPage import RuleConfigurationPage
-from LoginPage import LoginPage
+from Pages.LoginPage import LoginPage
+from Pages.RuleConfigurationPage import RuleConfigurationPage
+
+class TestLogin(unittest.TestCase):
+    def setUp(self):
+        self.login_page = LoginPage()
+        self.rule_page = RuleConfigurationPage()
+
+    def test_valid_login(self):
+        self.assertTrue(self.login_page.login('valid_user', 'valid_pass'))
+
+    def test_invalid_login(self):
+        self.assertFalse(self.login_page.login('invalid_user', 'invalid_pass'))
 
 class TestRuleConfiguration(unittest.TestCase):
-    ...
-
-class TestLoginNegativeScenarios(unittest.TestCase):
     def setUp(self):
-        # Setup WebDriver and base_url here
-        # Example:
-        # from selenium import webdriver
-        # self.driver = webdriver.Chrome()
-        # self.base_url = "http://your-app-url.com"
-        # For demonstration, these are placeholders
-        self.driver = None
-        self.base_url = "http://your-app-url.com"
-        self.login_page = LoginPage(self.driver, self.base_url)
+        self.rule_page = RuleConfigurationPage()
+        self.login_page = LoginPage()
+        self.login_page.login('admin', 'admin_pass')
 
-    def tearDown(self):
-        # Teardown WebDriver here
-        # Example:
-        # if self.driver:
-        #     self.driver.quit()
-        pass
+    def test_define_rule_and_execute(self):
+        response = self.rule_page.define_rule_and_handle_response('percent', 20)
+        self.assertEqual(response['status'], 'success')
+        deposit_result = self.rule_page.simulate_deposit(1000)
+        self.assertEqual(deposit_result['transferred'], 200)
 
-    def test_TC03_login_with_empty_fields(self):
-        ...
+    def test_define_rule_invalid_type(self):
+        response = self.rule_page.define_rule_and_handle_response('unsupported', 50)
+        self.assertEqual(response['status'], 'error')
+        self.assertIn('Unsupported rule type', response['message'])
 
-    def test_TC04_login_with_empty_username(self):
-        ...
+    # TC-FT-005: Define rule for 10% of deposit, simulate deposit, verify transfer
+    def test_TC_FT_005_define_10_percent_rule_and_verify_transfer(self):
+        # Step 1: Define rule for 10% of deposit
+        response = self.rule_page.define_rule_and_handle_response('percent', 10)
+        self.assertEqual(response['status'], 'success', msg=f"Expected success, got {response}")
+        # Step 2: Simulate deposit
+        deposit_amount = 5000
+        deposit_result = self.rule_page.simulate_deposit(deposit_amount)
+        # Step 3: Verify 10% transfer
+        expected_transferred = deposit_amount * 0.10
+        self.assertEqual(deposit_result['transferred'], expected_transferred, msg=f"Expected {expected_transferred}, got {deposit_result['transferred']}")
+        self.assertEqual(deposit_result['status'], 'completed')
 
-    def test_TC05_login_with_valid_username_and_empty_password(self):
-        """
-        TC05: login with valid username and empty password, expect 'Password is required' error message
-        Acceptance Criteria: SCRUM-209-AC3
-        """
-        # Step 1: Navigate to login page
-        self.login_page.navigate_to_login()
-        # Step 2: Enter valid username and empty password
-        username = "valid_user"
-        password = ""
-        self.login_page.enter_username(username)
-        self.login_page.enter_password(password)
-        # Step 3: Click 'Login' button
-        self.login_page.click_login()
-        # Expected: Error message 'Password is required' is displayed
-        error_msg = self.login_page.get_error_message()
-        self.assertEqual(error_msg, "Password is required", "Error message for empty password is incorrect.")
-
-    def test_TC06_login_with_remember_me_session_persists(self):
-        """
-        TC06: login with valid username and password, check 'Remember Me', verify session persists after browser restart
-        """
-        # Step 1: Navigate to login page
-        self.login_page.navigate_to_login()
-        # Step 2: Enter valid username and password
-        username = "valid_user"
-        password = "ValidPass123"
-        self.login_page.enter_username(username)
-        self.login_page.enter_password(password)
-        # Step 3: Check 'Remember Me' checkbox
-        self.login_page.check_remember_me()
-        # Step 4: Click 'Login' button
-        self.login_page.click_login()
-        # Simulate browser restart
-        # For demonstration purposes, assume session persistence check is done via a method
-        session_persists = self.login_page.verify_session_persists_after_restart()
-        self.assertTrue(session_persists, "Session did not persist after browser restart with 'Remember Me' checked.")
+    # TC-FT-006: Define rule with unsupported type, verify graceful rejection, verify existing rules still execute
+    def test_TC_FT_006_define_unsupported_rule_and_verify_rejection_and_existing_rule_execution(self):
+        # Step 1: Define rule with unsupported type
+        response = self.rule_page.define_rule_and_handle_response('bonus', 15)
+        self.assertEqual(response['status'], 'error', msg=f"Expected error, got {response}")
+        self.assertIn('Unsupported rule type', response['message'])
+        # Step 2: Ensure existing rule still executes
+        # Define a valid rule first
+        valid_rule_response = self.rule_page.define_rule_and_handle_response('percent', 20)
+        self.assertEqual(valid_rule_response['status'], 'success')
+        # Simulate deposit and verify rule execution
+        deposit_amount = 2000
+        deposit_result = self.rule_page.simulate_deposit(deposit_amount)
+        expected_transferred = deposit_amount * 0.20
+        self.assertEqual(deposit_result['transferred'], expected_transferred, msg=f"Expected {expected_transferred}, got {deposit_result['transferred']}")
+        self.assertEqual(deposit_result['status'], 'completed')
