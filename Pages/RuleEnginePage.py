@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+import time
 
 class RuleEnginePage:
     """
@@ -9,6 +10,7 @@ class RuleEnginePage:
       - Percentage of deposit rules
       - Fixed amount rules
       - Currency conversion rules (future/new type)
+      - Batch loading and evaluation of rules (TC-FT-007)
     """
     # Locators (Placeholder - update when UI details available)
     DEFINE_RULE_BUTTON = (By.ID, "define-rule-btn")
@@ -22,6 +24,9 @@ class RuleEnginePage:
     SUCCESS_MESSAGE = (By.CSS_SELECTOR, "div.success-message")
     ERROR_MESSAGE = (By.CSS_SELECTOR, "div.error-message")
     EXISTING_RULES_LIST = (By.ID, "existing-rules-list")
+    BATCH_UPLOAD_INPUT = (By.ID, "batch-upload-input")  # Placeholder for batch upload
+    BATCH_UPLOAD_BUTTON = (By.ID, "batch-upload-btn")  # Placeholder for batch upload trigger
+    EVALUATE_ALL_BUTTON = (By.ID, "evaluate-all-btn")  # Placeholder for simultaneous evaluation
 
     def __init__(self, driver: WebDriver):
         self.driver = driver
@@ -73,3 +78,49 @@ class RuleEnginePage:
         """Return list of existing rules."""
         rules = self.driver.find_elements(*self.EXISTING_RULES_LIST)
         return [rule.text for rule in rules]
+
+    # --- TC-FT-007 Batch Loading and Evaluation ---
+    def batch_load_rules(self, rules: list):
+        """
+        Batch load 10,000 rules into the system.
+        Args:
+            rules (list): List of rule dicts to upload.
+        Returns:
+            bool: True if upload is successful, False otherwise.
+        """
+        import json
+        # Convert rules to JSON
+        rules_json = json.dumps(rules)
+        # Find batch upload input
+        upload_input = self.driver.find_element(*self.BATCH_UPLOAD_INPUT)
+        upload_input.clear()
+        upload_input.send_keys(rules_json)
+        # Click upload button
+        self.driver.find_element(*self.BATCH_UPLOAD_BUTTON).click()
+        # Wait for success message
+        try:
+            time.sleep(2)  # Adjust as needed
+            msg = self.get_success_message()
+            return "successfully uploaded" in msg.lower()
+        except Exception:
+            return False
+
+    def evaluate_all_rules(self):
+        """
+        Trigger evaluation for all rules simultaneously.
+        Returns:
+            bool: True if evaluation completes within threshold, False otherwise.
+        """
+        self.driver.find_element(*self.EVALUATE_ALL_BUTTON).click()
+        # Wait for completion indicator (success message or similar)
+        try:
+            start_time = time.time()
+            while True:
+                msg = self.get_success_message()
+                if "evaluation complete" in msg.lower():
+                    elapsed = time.time() - start_time
+                    # Acceptable threshold: 60 seconds (example)
+                    return elapsed < 60
+                time.sleep(1)
+        except Exception:
+            return False
