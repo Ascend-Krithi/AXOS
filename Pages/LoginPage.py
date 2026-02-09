@@ -147,4 +147,3 @@ class LoginPage:
             return False
 
     # Additional methods can be added as required by future test cases.
-
