@@ -14,6 +14,34 @@ class TestLogin(unittest.TestCase):
     def test_invalid_login(self):
         self.assertFalse(self.login_page.login('invalid_user', 'invalid_pass'))
 
+    # TC09: Login with special characters
+    def test_TC09_login_with_special_characters(self):
+        url = 'http://example.com/login'  # Replace with actual login URL
+        self.login_page.navigate_to_login(url)
+        self.login_page.enter_special_characters_username('user!@#')
+        self.login_page.enter_special_characters_password('pass$%^&*')
+        self.login_page.click_login()
+        # Assert that fields accept special characters (implicitly tested by no exceptions)
+        # Assert login is processed or proper error message is shown
+        if self.login_page.is_logged_in():
+            self.assertTrue(self.login_page.is_logged_in())
+        else:
+            error_message = self.login_page.get_error_message()
+            self.assertNotEqual(error_message, '', msg='Expected error message for invalid special character login')
+
+    # TC10: Network/server error during login
+    def test_TC10_network_error_during_login(self):
+        url = 'http://example.com/login'  # Replace with actual login URL
+        self.login_page.navigate_to_login(url)
+        self.login_page.enter_username('valid_user')
+        self.login_page.enter_password('ValidPass123')
+        self.login_page.simulate_network_error()
+        self.login_page.click_login()
+        # Assert error message for network/server error
+        expected_message = 'Unable to connect. Please try again later.'
+        self.assertTrue(self.login_page.validate_network_error_message(expected_message), msg='Expected network error message not found')
+        self.login_page.restore_network()
+
 class TestRuleConfiguration(unittest.TestCase):
     def setUp(self):
         self.rule_page = RuleConfigurationPage()
