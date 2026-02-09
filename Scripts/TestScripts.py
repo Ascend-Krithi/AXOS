@@ -1,21 +1,48 @@
+# Existing imports
+import json
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from Pages.RuleConfigurationPage import RuleConfigurationPage
+from selenium import webdriver
 
-import unittest
-from RuleConfigurationPage import RuleConfigurationPage
+class TestLoginFunctionality:
+    def __init__(self, page):
+        self.page = page
+        self.login_page = LoginPage(page)
 
-class TestRuleConfiguration(unittest.TestCase):
-    # Existing test methods...
+    async def test_empty_fields_validation(self):
+        await self.login_page.navigate()
+        await self.login_page.submit_login('', '')
+        assert await self.login_page.get_error_message() == 'Mandatory fields are required'
 
-    def test_TC_SCRUM158_05_invalid_trigger(self):
-        """TC_SCRUM158_05: Verify error handling for invalid trigger input."""
-        page = RuleConfigurationPage()
-        result = page.run_invalid_trigger_test()
-        self.assertTrue(result['error_detected'], f"Expected error for invalid trigger, got: {result}")
+    async def test_remember_me_functionality(self):
+        await self.login_page.navigate()
+        await self.login_page.fill_email('')
 
-    def test_TC_SCRUM158_06_missing_condition_param(self):
-        """TC_SCRUM158_06: Verify error handling when condition parameter is missing."""
-        page = RuleConfigurationPage()
-        result = page.run_missing_condition_param_test()
-        self.assertTrue(result['error_detected'], f"Expected error for missing condition parameter, got: {result}")
+class TestRuleConfigurationNegativeCases:
+    def setup_method(self):
+        # Setup WebDriver for each test
+        self.driver = webdriver.Chrome()
+        self.rule_page = RuleConfigurationPage(self.driver)
 
-if __name__ == '__main__':
-    unittest.main()
+    def teardown_method(self):
+        # Quit WebDriver after each test
+        self.driver.quit()
+
+    def test_tc_scrum158_05_invalid_trigger(self):
+        """
+        TC_SCRUM158_05: Prepare invalid trigger schema, validate, assert error message includes 'invalid value', submit, assert API returns 400 Bad Request.
+        """
+        self.rule_page.run_tc_scrum158_05()
+        error_message = self.rule_page.get_schema_error_message()
+        assert error_message is not None and 'invalid value' in error_message.lower(), 'Expected schema error for invalid trigger'
+
+    def test_tc_scrum158_06_incomplete_condition(self):
+        """
+        TC_SCRUM158_06: Prepare incomplete condition schema, validate, assert error message includes 'incomplete condition', submit, assert API returns 400 Bad Request.
+        """
+        self.rule_page.run_tc_scrum158_06()
+        error_message = self.rule_page.get_schema_error_message()
+        assert error_message is not None and 'incomplete condition' in error_message.lower(), 'Expected schema error for incomplete condition'
