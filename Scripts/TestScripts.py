@@ -88,3 +88,54 @@ class TestRuleConfiguration:
         self.page.save_rule()
         # Simulate passing of several weeks (pseudo, as actual time manipulation is not possible in Selenium)
         # Verify transfer action executed at each interval (would require backend validation or UI confirmation)
+
+    def test_define_multi_condition_rule_and_deposit_simulation(self):
+        """
+        TC-FT-003: Define a rule with multiple conditions (balance >= 1000, source = 'salary'), simulate deposit from 'salary' with balance 900 (expect no transfer), simulate deposit from 'salary' with balance 1200 (expect transfer).
+        """
+        rule_id = 'TC-FT-003-Rule'
+        rule_name = 'Multi-Condition Salary Rule'
+        trigger_type = 'after_deposit'
+        action_type = 'fixed_amount'
+        amount = 50
+        destination_account = '555666777'
+        # Step 1: Define rule with multiple conditions
+        self.page.set_rule_id(rule_id)
+        self.page.set_rule_name(rule_name)
+        self.page.select_trigger_type(trigger_type)
+        self.page.set_action_type(action_type)
+        self.page.set_transfer_amount(amount)
+        self.page.set_destination_account(destination_account)
+        # Add conditions
+        self.page.add_condition('balance_threshold', operator='>=', value=1000)
+        self.page.add_condition('transaction_source', value='salary')
+        self.page.save_rule()
+        assert self.page.validate_rule_success(), "Rule was not accepted."
+        # Step 2: Simulate deposit with balance 900 (no transfer)
+        self.page.simulate_deposit(balance=900, deposit=100, source='salary')
+        assert self.page.validate_transfer_not_executed(), "Transfer should NOT be executed for balance 900."
+        # Step 3: Simulate deposit with balance 1200 (transfer executed)
+        self.page.simulate_deposit(balance=1200, deposit=100, source='salary')
+        assert self.page.validate_transfer_executed(), "Transfer should be executed for balance 1200."
+
+    def test_error_handling_missing_trigger_and_unsupported_action(self):
+        """
+        TC-FT-004: Submit rule with missing trigger type (expect error), submit rule with unsupported action type (expect error).
+        """
+        rule_id = 'TC-FT-004-Rule'
+        rule_name = 'Error Handling Rule'
+        # Step 1: Missing trigger type
+        self.page.set_rule_id(rule_id)
+        self.page.set_rule_name(rule_name)
+        self.page.set_action_type('fixed_amount')
+        self.page.set_transfer_amount(100)
+        self.page.set_destination_account('111222333')
+        self.page.save_rule()
+        assert self.page.validate_missing_trigger_error(), "Missing trigger error not detected."
+        # Step 2: Unsupported action type
+        self.page.set_rule_id(rule_id)
+        self.page.set_rule_name(rule_name)
+        self.page.select_trigger_type('specific_date')
+        self.page.set_action_type('unknown_action')
+        self.page.save_rule()
+        assert self.page.validate_unsupported_action_error(), "Unsupported action type error not detected."
