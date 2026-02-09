@@ -79,3 +79,34 @@ class TestLoginFunctionality:
         sql_password = "' OR 1=1;--"
         login_page.sql_injection_login_test(sql_email, sql_password)
         # Error assertion is inside sql_injection_login_test
+
+    @pytest.mark.asyncio
+    async def test_TC_LOGIN_009_max_input_invalid_credentials(self):
+        """
+        Implements TC_LOGIN_009:
+        1. Navigate to the login page.
+        2. Enter maximum allowed characters (50) in email and password fields.
+        3. Click the 'Login' button.
+        4. Verify error message 'Invalid credentials' is shown, no field overflow or UI break.
+        """
+        login_page = LoginPage(self.driver)
+        assert login_page.displayed(), "Login page is not displayed."
+        max_email = "a" * 50
+        max_password = "b" * 50
+        login_page.login_with_max_chars(max_email, max_password)
+        login_page.login_and_verify_error(max_email, max_password, "Invalid credentials")
+
+    @pytest.mark.asyncio
+    async def test_TC_LOGIN_010_unregistered_user_error(self):
+        """
+        Implements TC_LOGIN_010:
+        1. Navigate to the login page.
+        2. Enter email and password for a user not registered.
+        3. Click the 'Login' button.
+        4. Verify error message 'User not found' or 'Invalid credentials' is shown, user remains on login page.
+        """
+        login_page = LoginPage(self.driver)
+        assert login_page.displayed(), "Login page is not displayed."
+        unregistered_email = "unknown@example.com"
+        unregistered_password = "RandomPass789"
+        login_page.login_and_verify_error(unregistered_email, unregistered_password, "User not found")
