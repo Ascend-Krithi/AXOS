@@ -160,5 +160,4 @@ Future Considerations:
 - Enhance post-login validation with additional indicators.
 - Implement logging and reporting for advanced QA analytics.
 - Expand test coverage for edge cases (e.g., locked accounts, expired passwords).
-
 """
