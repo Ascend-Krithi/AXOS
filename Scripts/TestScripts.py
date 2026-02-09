@@ -68,5 +68,29 @@ class LoginTests(unittest.TestCase):
         self.assertFalse(results['lower']['success'], 'Lower case credentials should fail')
         self.assertFalse(results['mixed']['success'], 'Mixed case credentials should fail')
 
+    def test_TC_LOGIN_003_empty_email(self):
+        """
+        Test Case TC_LOGIN_003:
+        - Navigate to login page
+        - Leave email/username field empty, enter valid password
+        - Click login
+        - Expect error message 'Email/Username required'
+        """
+        self.login_page.navigate_to_login()
+        error_message = self.login_page.login_with_empty_email('ValidPass123')
+        self.assertEqual(error_message, 'Email/Username required', "Should display 'Email/Username required' error message")
+
+    def test_TC_LOGIN_004_empty_password(self):
+        """
+        Test Case TC_LOGIN_004:
+        - Navigate to login page
+        - Enter valid email/username, leave password field empty
+        - Click login
+        - Expect error message 'Password required'
+        """
+        self.login_page.navigate_to_login()
+        error_message = self.login_page.login_with_empty_password('user@example.com')
+        self.assertEqual(error_message, 'Password required', "Should display 'Password required' error message")
+
 if __name__ == '__main__':
     unittest.main()
