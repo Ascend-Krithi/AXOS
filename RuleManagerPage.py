@@ -9,6 +9,7 @@ class RuleManagerPage:
         self.rule_json_input = (By.ID, 'rule-json-input')  # Placeholder locator
         self.submit_rule_button = (By.ID, 'submit-rule-btn')  # Placeholder locator
         self.acceptance_message = (By.CSS_SELECTOR, 'div.rule-acceptance-msg')  # Placeholder locator
+        self.rejection_message = (By.CSS_SELECTOR, 'div.rule-rejection-msg')  # Placeholder locator (NEW)
 
     def enter_rule_json(self, rule_json):
         rule_input = WebDriverWait(self.driver, 10).until(
@@ -28,3 +29,21 @@ class RuleManagerPage:
             EC.visibility_of_element_located(self.acceptance_message)
         )
         return 'accepted' in acceptance.text.lower()
+
+    def verify_rule_rejected(self):
+        rejection = WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(self.rejection_message)
+        )
+        return 'rejected' in rejection.text.lower() or 'unsupported' in rejection.text.lower() or 'error' in rejection.text.lower()
+
+    def define_rule(self, rule_json):
+        """
+        Defines a rule using JSON input and submits it.
+        Returns True if accepted, False if rejected.
+        """
+        self.enter_rule_json(rule_json)
+        self.submit_rule()
+        try:
+            return self.verify_rule_accepted()
+        except Exception:
+            return not self.verify_rule_rejected()
