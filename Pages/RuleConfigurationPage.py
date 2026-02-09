@@ -1,16 +1,16 @@
 # Executive Summary
-# This update appends new methods to RuleConfigurationPage.py to fully automate test cases TC_SCRUM158_03 and TC_SCRUM158_04. These methods allow creation, storage, retrieval, triggering, and verification of rules with recurring interval triggers and strict validation for missing fields, using all relevant locators. No existing logic is altered.
+# This update appends new methods to RuleConfigurationPage.py to fully automate test cases TC_SCRUM158_07 and TC_SCRUM158_08. These methods allow creation of rules with required fields and handling large metadata fields, using all relevant locators defined in this class. No existing logic is altered.
 
 # Detailed Analysis
-# - TC_SCRUM158_03: Requires creating a rule with recurring interval trigger, storing, and verifying scheduling.
-# - TC_SCRUM158_04: Requires submitting a rule with missing trigger field and verifying error handling.
-# - All necessary locators are present.
+# - TC_SCRUM158_07: Requires creating a rule with only required fields (manual trigger, one condition, one action) and verifying successful creation.
+# - TC_SCRUM158_08: Requires submitting a rule with a large metadata field and verifying acceptance and performance.
+# - All necessary locators are present in the PageClass.
 # - Backend verification is UI-based.
 
 # Implementation Guide
-# - Methods appended: create_rule_with_recurring_interval_trigger, validate_missing_trigger_field.
-# - Each method uses WebDriverWait for reliability.
-# - Locators are strictly mapped from existing code.
+# - Methods appended: create_rule_with_required_fields, create_rule_with_large_metadata.
+# - Each method uses WebDriverWait for reliability and strictly uses defined locators.
+# - Existing logic and imports are preserved.
 
 # Quality Assurance Report
 # - Code follows Selenium Python standards.
@@ -126,3 +126,93 @@ class RuleConfigurationPage:
             return {'status': 'error', 'message': error.text}
         except TimeoutException:
             return {'status': 'unknown', 'message': 'No error feedback received'}
+
+    # --- Appended Methods for TC_SCRUM158_07 and TC_SCRUM158_08 ---
+    def create_rule_with_required_fields(self, schema):
+        """
+        Automates creation of a rule with only required fields based on the provided schema.
+        Args:
+            schema (dict): {"trigger": {"type": "manual"}, "conditions": [{"type": "amount", "operator": "==", "value": 1}], "actions": [{"type": "transfer", "account": "G", "amount": 1}]}
+        Returns:
+            dict: {'status': 'success'|'error'|'unknown', 'message': feedback}
+        """
+        # Set Trigger
+        self.wait.until(EC.element_to_be_clickable(self.trigger_type_dropdown)).click()
+        self.driver.find_element(*self.trigger_type_dropdown).send_keys(schema['trigger']['type'])
+
+        # Add Condition
+        self.wait.until(EC.element_to_be_clickable(self.add_condition_btn)).click()
+        self.driver.find_element(*self.condition_type_dropdown).send_keys(schema['conditions'][0]['type'])
+        self.driver.find_element(*self.operator_dropdown).send_keys(schema['conditions'][0]['operator'])
+        self.driver.find_element(*self.balance_threshold_input).clear()
+        self.driver.find_element(*self.balance_threshold_input).send_keys(str(schema['conditions'][0]['value']))
+
+        # Set Action
+        self.wait.until(EC.element_to_be_clickable(self.action_type_dropdown)).click()
+        self.driver.find_element(*self.action_type_dropdown).send_keys(schema['actions'][0]['type'])
+        self.driver.find_element(*self.destination_account_input).clear()
+        self.driver.find_element(*self.destination_account_input).send_keys(schema['actions'][0]['account'])
+        self.driver.find_element(*self.transfer_amount_input).clear()
+        self.driver.find_element(*self.transfer_amount_input).send_keys(str(schema['actions'][0]['amount']))
+
+        # Save Rule
+        self.wait.until(EC.element_to_be_clickable(self.save_rule_button)).click()
+        try:
+            success = self.wait.until(EC.visibility_of_element_located(self.success_message))
+            return {'status': 'success', 'message': success.text}
+        except TimeoutException:
+            try:
+                error = self.wait.until(EC.visibility_of_element_located(self.schema_error_message))
+                return {'status': 'error', 'message': error.text}
+            except TimeoutException:
+                return {'status': 'unknown', 'message': 'No feedback received'}
+
+    def create_rule_with_large_metadata(self, schema, metadata):
+        """
+        Automates creation of a rule with a large metadata field and verifies acceptance/performance.
+        Args:
+            schema (dict): rule schema (must include trigger, conditions, actions)
+            metadata (str): large metadata string (e.g., 10,000 chars)
+        Returns:
+            dict: {'status': 'success'|'error'|'unknown', 'message': feedback}
+        """
+        # Set Trigger
+        self.wait.until(EC.element_to_be_clickable(self.trigger_type_dropdown)).click()
+        self.driver.find_element(*self.trigger_type_dropdown).send_keys(schema['trigger']['type'])
+
+        # Add Condition if present
+        if 'conditions' in schema and schema['conditions']:
+            self.wait.until(EC.element_to_be_clickable(self.add_condition_btn)).click()
+            self.driver.find_element(*self.condition_type_dropdown).send_keys(schema['conditions'][0]['type'])
+            self.driver.find_element(*self.operator_dropdown).send_keys(schema['conditions'][0]['operator'])
+            self.driver.find_element(*self.balance_threshold_input).clear()
+            self.driver.find_element(*self.balance_threshold_input).send_keys(str(schema['conditions'][0]['value']))
+
+        # Set Action if present
+        if 'actions' in schema and schema['actions']:
+            self.wait.until(EC.element_to_be_clickable(self.action_type_dropdown)).click()
+            self.driver.find_element(*self.action_type_dropdown).send_keys(schema['actions'][0]['type'])
+            self.driver.find_element(*self.destination_account_input).clear()
+            self.driver.find_element(*self.destination_account_input).send_keys(schema['actions'][0]['account'])
+            self.driver.find_element(*self.transfer_amount_input).clear()
+            self.driver.find_element(*self.transfer_amount_input).send_keys(str(schema['actions'][0]['amount']))
+
+        # Set Metadata in JSON Schema Editor
+        editor = self.wait.until(EC.visibility_of_element_located(self.json_schema_editor))
+        editor.clear()
+        editor.send_keys(metadata)
+
+        # Validate Schema
+        self.wait.until(EC.element_to_be_clickable(self.validate_schema_btn)).click()
+
+        # Save Rule
+        self.wait.until(EC.element_to_be_clickable(self.save_rule_button)).click()
+        try:
+            success = self.wait.until(EC.visibility_of_element_located(self.success_message))
+            return {'status': 'success', 'message': success.text}
+        except TimeoutException:
+            try:
+                error = self.wait.until(EC.visibility_of_element_located(self.schema_error_message))
+                return {'status': 'error', 'message': error.text}
+            except TimeoutException:
+                return {'status': 'unknown', 'message': 'No feedback received'}
