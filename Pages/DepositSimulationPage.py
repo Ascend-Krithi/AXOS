@@ -1,7 +1,7 @@
 # DepositSimulationPage.py
 """
 Selenium Page Object for Deposit Simulation Workflow
-Generated to cover acceptance criteria for deposit-triggered rule execution (SCENARIO-3).
+Generated to cover acceptance criteria for deposit-triggered rule execution (SCENARIO-5).
 """
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
