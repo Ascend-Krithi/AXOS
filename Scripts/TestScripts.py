@@ -59,3 +59,59 @@ async def test_TC_LOGIN_010_case_sensitivity_in_login(browser):
     for email in email_variants:
         if email != valid_email:
             assert results[email] is False, f"Login succeeded for variant: {email}"
+
+# --- New test methods for TC_LOGIN_007 and TC_LOGIN_008 ---
+
+@pytest.mark.asyncio
+async def test_TC_LOGIN_007_valid_login_without_remember_me_session_persistence(browser):
+    """
+    TC_LOGIN_007: Valid login without 'Remember Me', check session does not persist after browser restart.
+    Steps:
+    1. Navigate to login page.
+    2. Enter valid email/username and password. Do not select 'Remember Me'.
+    3. Click Login button.
+    4. Close and reopen browser. User should be logged out; session does not persist.
+    """
+    login_page = LoginPage(browser)
+    url = "https://example.com/login"  # Replace with actual login URL
+    email = "user@example.com"
+    password = "ValidPassword123"
+
+    # Step 1-3: Login without Remember Me
+    login_page.navigate_to_login_page(url)
+    login_page.enter_email(email)
+    login_page.enter_password(password)
+    login_page.set_remember_me(False)
+    assert login_page.validate_remember_me_unchecked(), "Remember Me should NOT be checked."
+    login_page.click_login()
+    assert login_page.is_login_successful(), "Login should be successful."
+
+    # Step 4: Close and reopen browser
+    session_cookie_before = login_page.get_session_cookie()
+    login_page.driver.quit()
+    # Simulate browser restart (driver re-instantiation handled externally)
+    # After restart, instantiate a new LoginPage with a new driver
+    # For demonstration, assume driver is re-instantiated externally and passed as 'browser'
+    login_page = LoginPage(browser)
+    assert login_page.logout_and_verify_session(url), "Session should not persist after browser restart. User should be logged out."
+
+@pytest.mark.asyncio
+async def test_TC_LOGIN_008_forgot_password_flow(browser):
+    """
+    TC_LOGIN_008: Forgot Password flow and confirmation message validation.
+    Steps:
+    1. Navigate to login page.
+    2. Click on 'Forgot Password' link.
+    3. Enter registered email/username and submit.
+    Expected: Password reset email is sent and confirmation message displayed.
+    """
+    login_page = LoginPage(browser)
+    url = "https://example.com/login"  # Replace with actual login URL
+    email = "user@example.com"
+
+    login_page.navigate_to_login_page(url)
+    login_page.click_forgot_password()
+    assert login_page.is_on_password_recovery_page(), "Should be on password recovery page."
+    login_page.submit_forgot_password(email)
+    confirmation_msg = login_page.get_reset_confirmation_message()
+    assert confirmation_msg.strip() != "", "Password reset confirmation message should be displayed."
