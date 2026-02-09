@@ -92,31 +92,47 @@ class TestScripts:
         assert result['rejected'] is True, "System did not reject SQL injection rule"
         assert any(word in result['error_message'].lower() for word in ['sql', 'invalid', 'rejected']), f"Unexpected error message: {result['error_message']}"
 
-    # TC-FT-009: Create, store, and retrieve a valid rule
-    def test_create_and_retrieve_valid_rule(self, driver):
+    # TC-FT-009: Rule creation and storage in PostgreSQL, retrieval from backend
+    def test_rule_creation_and_retrieval_postgresql(self, driver):
+        '''
+        Test Case 1061 / TC-FT-009
+        1. Store a valid rule in PostgreSQL via the UI.
+        2. Retrieve the rule from the backend via the UI and verify it matches the input.
+        '''
         rule_page = RulePage(driver)
         rule_data = {
             "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"},
             "action": {"type": "fixed_amount", "amount": 100},
             "conditions": []
         }
-        submission_result = rule_page.create_and_store_rule(rule_data)
-        assert "success" in submission_result.lower() or "stored" in submission_result.lower(), f"Rule submission failed: {submission_result}"
-        rule_identifier = "specific_date_2024-07-01T10:00:00Z_fixed_amount_100"
-        retrieved_rule = rule_page.retrieve_rule(rule_identifier)
-        assert str(rule_data['trigger']['type']) in retrieved_rule
-        assert str(rule_data['action']['type']) in retrieved_rule
-        assert str(rule_data['action']['amount']) in retrieved_rule
+        submission_result = rule_page.store_rule_in_postgresql(rule_data)
+        assert "success" in submission_result.lower() or "stored" in submission_result.lower(), f"Unexpected submission result: {submission_result}"
+        # Assuming the rule_id can be returned or is fixed for test
+        rule_id = "1061"  # Or obtain from the UI if available
+        retrieved_rule = rule_page.retrieve_rule_from_backend(rule_id)
+        # If backend returns a dict, compare fields
+        for key in rule_data:
+            assert key in retrieved_rule, f"Missing key {key} in retrieved rule"
+            assert rule_data[key] == retrieved_rule[key], f"Mismatch for key {key}: {rule_data[key]} != {retrieved_rule[key]}"
 
-    # TC-FT-010: Define a rule with empty conditions and trigger it
-    def test_define_rule_with_empty_conditions_and_trigger(self, driver):
+    # TC-FT-010: Rule definition with empty conditions and unconditional execution
+    def test_rule_unconditional_execution(self, driver):
+        '''
+        Test Case 1062 / TC-FT-010
+        1. Define a rule with empty conditions (unconditional).
+        2. Simulate a triggering event and assert that the transfer is executed without checking conditions.
+        '''
         rule_page = RulePage(driver)
         rule_data = {
             "trigger": {"type": "after_deposit"},
             "action": {"type": "fixed_amount", "amount": 100},
             "conditions": []
         }
-        submission_result = rule_page.create_and_store_rule(rule_data)
-        assert "success" in submission_result.lower() or "stored" in submission_result.lower(), f"Rule submission failed: {submission_result}"
-        trigger_result = rule_page.trigger_rule({"deposit": 1000})
-        assert "transfer executed" in trigger_result.lower() or "success" in trigger_result.lower(), f"Transfer not executed as expected: {trigger_result}"
+        submission_result = rule_page.store_rule_in_postgresql(rule_data)
+        assert "success" in submission_result.lower() or "stored" in submission_result.lower(), f"Unexpected submission result: {submission_result}"
+        # Simulate deposit to trigger rule
+        deposit_page = DepositPage(driver)
+        deposit_page.simulate_deposit(balance=1000, deposit=1000, source="test_source")
+        # Check transfer status
+        transfer_status = deposit_page.get_transfer_status()
+        assert "executed" in transfer_status.lower() or "success" in transfer_status.lower(), f"Transfer not executed unconditionally: {transfer_status}"
