@@ -50,3 +50,44 @@ class TestScripts:
         error_messages = rule_page.get_error_messages()
         assert 'Field is required' in error_messages
         assert 'unsupported_field is not supported' in error_messages
+
+    # TC-FT-007: Performance test for bulk rule loading and evaluation
+    def test_bulk_rule_loading_and_evaluation_performance(self, driver):
+        '''
+        Loads 10,000 valid rules and triggers evaluation for all rules simultaneously.
+        Verifies system meets defined performance thresholds.
+        '''
+        import random
+        rule_page = RulePage(driver)
+        # Generate 10,000 valid rules
+        rules_batch = []
+        for i in range(10000):
+            rule = {
+                'trigger_type': f'automated_trigger_{i}',
+                'action_type': 'fixed_amount',
+                'amount': random.randint(1, 10000),
+                'conditions': [
+                    {'type': 'balance_threshold', 'value': random.randint(100, 10000)},
+                    {'type': 'transaction_source', 'value': f'source_{i}'}
+                ]
+            }
+            rules_batch.append(rule)
+        perf_result = rule_page.load_bulk_rules_and_evaluate(rules_batch)
+        assert perf_result['load_time'] <= 60, f"Load time too high: {perf_result['load_time']}s"
+        assert perf_result['evaluation_time'] <= 180, f"Evaluation time too high: {perf_result['evaluation_time']}s"
+        assert perf_result['performance_ok'] is True, "Performance criteria not met"
+
+    # TC-FT-008: SQL injection rejection test
+    def test_rule_sql_injection_rejection(self, driver):
+        '''
+        Submits a rule with SQL injection in a condition value and verifies system rejection.
+        '''
+        rule_page = RulePage(driver)
+        sql_injection_rule = {
+            "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"},
+            "action": {"type": "fixed_amount", "amount": 100},
+            "conditions": [{"type": "balance_threshold", "value": "1000; DROP TABLE users;--"}]
+        }
+        result = rule_page.submit_rule_with_sql_injection(sql_injection_rule)
+        assert result['rejected'] is True, "System did not reject SQL injection rule"
+        assert any(word in result['error_message'].lower() for word in ['sql', 'invalid', 'rejected']), f"Unexpected error message: {result['error_message']}"
