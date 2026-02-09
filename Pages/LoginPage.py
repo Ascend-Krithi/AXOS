@@ -2,7 +2,7 @@
 LoginPage.py
 
 Selenium PageClass for Login Functionality.
-Covers test cases: TC_Login_01 (valid login), TC_Login_02 (invalid login).
+Covers test cases: TC_Login_01 (valid login), TC_Login_02 (invalid login), TC_Login_03 (missing email), TC_Login_04 (missing password).
 Implements navigation, credential entry, login action, and validation of outcomes.
 
 Author: Automation Orchestration Agent
@@ -122,17 +122,47 @@ class LoginPage:
         self.login_with_credentials(email, password)
         return self.get_error_message().strip() == expected_error.strip()
 
+    def validate_login_missing_email(self, url: str, password: str, expected_error: str) -> bool:
+        """
+        TC_Login_03: Navigates to login page, leaves email empty, enters valid password, clicks login, and validates 'Email required' error.
+        :param url: Login page URL
+        :param password: Valid password
+        :param expected_error: Expected error message text (e.g., 'Email required')
+        :return: True if expected error is shown, else False
+        """
+        self.navigate_to_login_page(url)
+        self.enter_email("")
+        self.enter_password(password)
+        self.click_login()
+        return self.get_error_message().strip() == expected_error.strip()
+
+    def validate_login_missing_password(self, url: str, email: str, expected_error: str) -> bool:
+        """
+        TC_Login_04: Navigates to login page, enters valid email, leaves password empty, clicks login, and validates 'Password required' error.
+        :param url: Login page URL
+        :param email: Valid email/username
+        :param expected_error: Expected error message text (e.g., 'Password required')
+        :return: True if expected error is shown, else False
+        """
+        self.navigate_to_login_page(url)
+        self.enter_email(email)
+        self.enter_password("")
+        self.click_login()
+        return self.get_error_message().strip() == expected_error.strip()
+
 # End of LoginPage.py
 
 """
 Documentation:
 
 Executive Summary:
-This PageClass automates login functionality, covering TC_Login_01 (valid login) and TC_Login_02 (invalid login). It provides robust methods for navigation, credential entry, login action, and outcome validation, ensuring strict code integrity and test coverage.
+This PageClass automates login functionality, covering TC_Login_01 (valid login), TC_Login_02 (invalid login), TC_Login_03 (missing email), and TC_Login_04 (missing password). It provides robust methods for navigation, credential entry, login action, and outcome validation, ensuring strict code integrity and test coverage.
 
 Detailed Analysis:
-- TC_Login_01: Requires automation for navigating to login, entering valid credentials, clicking login, and validating success.
-- TC_Login_02: Requires automation for navigating to login, entering invalid credentials, clicking login, and validating error message.
+- TC_Login_01: Automation for navigating to login, entering valid credentials, clicking login, and validating success.
+- TC_Login_02: Automation for navigating to login, entering invalid credentials, clicking login, and validating error message.
+- TC_Login_03: Automation for navigating to login, leaving email empty, entering valid password, clicking login, and validating 'Email required' error.
+- TC_Login_04: Automation for navigating to login, entering valid email, leaving password empty, clicking login, and validating 'Password required' error.
 - Composite methods encapsulate test case logic for maintainability and downstream automation.
 
 Implementation Guide:
@@ -140,6 +170,8 @@ Implementation Guide:
 - Instantiate LoginPage with a Selenium WebDriver.
 - Use validate_successful_login() for TC_Login_01 (valid login).
 - Use validate_invalid_login() for TC_Login_02 (invalid login).
+- Use validate_login_missing_email() for TC_Login_03 (missing email).
+- Use validate_login_missing_password() for TC_Login_04 (missing password).
 - Adjust SUCCESS_INDICATOR locator as needed for your application’s post-login element.
 
 Quality Assurance Report:
