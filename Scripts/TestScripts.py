@@ -123,5 +123,35 @@ class TestScripts(unittest.TestCase):
         self.assertEqual(result['status'], "rejected", f"Transfer was not rejected as expected: {result['response']}")
         self.assertEqual(result['error_message'], "Invalid authentication token", f"Error message mismatch: {result['error_message']}")
 
+    def test_TC_158_09_valid_transfer(self):
+        """TC-158-09: Submit valid transfer and verify processing"""
+        page = FinancialTransferPage()
+        payload = {
+            'amount': 200.00,
+            'currency': 'USD',
+            'source': 'ACC123',
+            'destination': 'ACC456',
+            'timestamp': '2024-06-01T10:00:00Z'
+        }
+        response = page.submit_transfer(payload)
+        self.assertTrue(page.is_transfer_successful(response), "Transfer was not processed successfully")
+        # Stub: Check for backend log entry (to be implemented)
+        backend_log = page.check_backend_log_entry(payload)
+        self.assertTrue(backend_log, "Backend log entry for transfer not found (stub)")
+
+    def test_TC_158_10_unsupported_currency(self):
+        """TC-158-10: Submit transfer with unsupported currency and verify error"""
+        page = FinancialTransferPage()
+        payload = {
+            'amount': 100.00,
+            'currency': 'XYZ',  # Unsupported currency
+            'source': 'ACC123',
+            'destination': 'ACC456',
+            'timestamp': '2024-06-01T10:00:00Z'
+        }
+        response = page.submit_transfer(payload)
+        self.assertFalse(page.is_transfer_successful(response), "Transfer should not succeed with unsupported currency")
+        self.assertIn('Unsupported currency', page.get_error_message(response), "Error message does not indicate unsupported currency")
+
 if __name__ == '__main__':
     unittest.main()
