@@ -97,3 +97,14 @@ class TestRuleConfiguration:
         schema = '{"trigger":{"type":"manual"},"conditions":[{"type":"amount","operator":"==","value":1},{"type":"amount","operator":"==","value":2},{"type":"amount","operator":"==","value":3},{"type":"amount","operator":"==","value":4},{"type":"amount","operator":"==","value":5},{"type":"amount","operator":"==","value":6},{"type":"amount","operator":"==","value":7},{"type":"amount","operator":"==","value":8},{"type":"amount","operator":"==","value":9},{"type":"amount","operator":"==","value":10}],"actions":[{"type":"transfer","account":"F1","amount":1},{"type":"transfer","account":"F2","amount":2},{"type":"transfer","account":"F3","amount":3},{"type":"transfer","account":"F4","amount":4},{"type":"transfer","account":"F5","amount":5},{"type":"transfer","account":"F6","amount":6},{"type":"transfer","account":"F7","amount":7},{"type":"transfer","account":"F8","amount":8},{"type":"transfer","account":"F9","amount":9},{"type":"transfer","account":"F10","amount":10}]}'
         success_message = page.prepare_schema_with_max_conditions_actions(schema)
         assert "success" in success_message.lower(), f"Expected success message, got: {success_message}"
+
+    def test_create_rule_with_minimal_schema_TC_SCRUM158_07(self):
+        """
+        TC_SCRUM158_07:
+        1. Prepare a schema with only required fields (one trigger, one condition, one action).
+        2. Submit the schema and verify rule creation, ensuring the rule is accepted and created successfully.
+        """
+        driver = ... # Setup Selenium WebDriver instance
+        page = RuleConfigurationPage(driver)
+        result = page.create_rule_with_minimal_schema_TC_SCRUM158_07()
+        assert result is True, "Rule was not created successfully for minimal schema TC_SCRUM158_07"
