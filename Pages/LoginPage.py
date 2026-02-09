@@ -3,24 +3,29 @@
 LoginPage Class
 
 Executive Summary:
-This class encapsulates the automation of the login page functionality for AXOS web application, now extended for TC_Login_08 (Forgot Password flow) and TC_Login_09 (max length credentials). It supports valid/invalid login scenarios, error message validation, 'Remember Me' checkbox handling, session persistence/expiration checks, forgot password flow, and input validation for max-length credentials, following industry best practices for Selenium Page Object Model.
+This class encapsulates the automation of the login page functionality for AXOS web application, now extended for TC_Login_08 (Forgot Password flow), TC_Login_09 (max length credentials), and TC_LOGIN_003 (empty field validation). It supports valid/invalid login scenarios, error message validation (including empty field errors), 'Remember Me' checkbox handling, session persistence/expiration checks, forgot password flow, and input validation for max-length credentials, following industry best practices for Selenium Page Object Model.
 
 Detailed Analysis:
 - TC_Login_08: Added methods to click 'Forgot Password' link and validate redirection to password recovery page.
 - TC_Login_09: Validated that fields accept maximum length input and login succeeds with valid credentials.
+- TC_LOGIN_002: All steps are covered by existing methods.
+- TC_LOGIN_003: Appended method to validate empty field error messages explicitly.
 - Existing methods for login, error validation, and session management remain unchanged.
 - Locators.json is missing; sensible defaults are used for all locators and documented.
 
 Implementation Guide:
 - Instantiate LoginPage with a Selenium WebDriver instance.
-- Use methods to perform login actions, interact with 'Remember Me', validate outcomes, handle forgot password flow, and validate max-length input.
+- Use methods to perform login actions, interact with 'Remember Me', validate outcomes, handle forgot password flow, validate max-length input, and check for empty field errors.
 - Locators are loaded from Locators.json if present; otherwise, defaults are used.
+- For empty field validation, use is_empty_field_error_displayed().
 - For forgot password, use click_forgot_password() and is_password_recovery_page_loaded().
 - For max-length input, use enter_username(), enter_password(), and validate_max_length_input().
 
 QA Report:
 - TC_Login_08: Forgot Password link click and password recovery redirection validated.
 - TC_Login_09: Max-length email/username input and login flow validated.
+- TC_LOGIN_002: Invalid credentials flow validated.
+- TC_LOGIN_003: Empty field error validation now explicitly supported.
 - All new methods appended without altering existing logic.
 - Strict code validation, robust error handling, and logging included.
 
@@ -28,6 +33,7 @@ Troubleshooting Guide:
 - If Locators.json is missing, update locator defaults in code when available.
 - For forgot password flow, ensure the link and password recovery page elements are correctly mapped.
 - For max-length input, verify field attribute limits in HTML and update defaults if UI changes.
+- For empty field validation, check UI error message text and locator; update defaults if UI changes.
 - Check for stale element exceptions if page reloads.
 - Verify driver session and page state before invoking actions.
 
@@ -253,3 +259,23 @@ class LoginPage:
         actual_username = username_element.get_attribute("value")
         actual_password = password_element.get_attribute("value")
         return len(actual_username) == username_field_max_length and len(actual_password) == password_field_max_length
+
+    # --- TC_LOGIN_003: Empty Field Validation ---
+    def is_empty_field_error_displayed(self):
+        """
+        Check if error or validation message is displayed for empty username/password fields after login attempt.
+        Uses sensible default locator: //div[@class='error']
+        Returns:
+            True if error message for empty fields is visible, False otherwise.
+        """
+        try:
+            error_element = WebDriverWait(self.driver, self.timeout).until(
+                EC.visibility_of_element_located((By.XPATH, self.locators.get("error_message", "//div[@class='error']")))
+            )
+            # Check for typical empty field messages
+            error_text = error_element.text.lower()
+            return error_element.is_displayed() and (
+                "required" in error_text or "empty" in error_text or "please enter" in error_text or "field cannot be blank" in error_text
+            )
+        except (NoSuchElementException, TimeoutException):
+            return False
