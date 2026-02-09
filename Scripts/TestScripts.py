@@ -27,44 +27,30 @@ class TestRuleConfiguration:
         """
         TC-FT-001: Define JSON rule with 'specific_date' trigger, validate acceptance, simulate trigger, validate execution.
         """
-        rule_data = {
-            "trigger": {
-                "type": "specific_date",
-                "date": "2024-07-01T10:00:00Z"
-            },
-            "action": {
-                "type": "fixed_amount",
-                "amount": 100
-            },
-            "conditions": []
-        }
-        self.rule_page.define_json_rule(rule_data)
-        self.rule_page.select_trigger_type("specific_date", date="2024-07-01T10:00:00Z")
-        self.rule_page.save_rule()
-        assert self.rule_page.validate_rule_acceptance(), "Rule was not accepted by the system."
-        # Simulate system time reaching trigger date (UI validation)
-        assert self.rule_page.simulate_trigger_action("SCENARIO-1"), "Transfer action was not executed at the specified date."
-        assert self.rule_page.validate_rule_execution(), "Rule action was not executed."
+        rule_id = "TC-FT-001"
+        rule_name = "Specific Date Transfer Rule"
+        date_str = "2024-07-01T10:00:00Z"
+        amount = 100
+        # Create rule
+        result = self.rule_page.create_specific_date_rule(rule_id, rule_name, date_str, amount)
+        assert result, "Rule was not accepted by the system."
+        # Simulate system time reaching trigger date
+        self.rule_page.simulate_time_reaching_trigger()
+        # Validate transfer action
+        assert self.rule_page.validate_transfer_action(), "Transfer action was not executed at the specified date."
 
     def test_define_recurring_rule_and_execute(self):
         """
         TC-FT-002: Define JSON rule with 'recurring' trigger, validate acceptance, simulate trigger, validate execution.
         """
-        rule_data = {
-            "trigger": {
-                "type": "recurring",
-                "interval": "weekly"
-            },
-            "action": {
-                "type": "percentage_of_deposit",
-                "percentage": 10
-            },
-            "conditions": []
-        }
-        self.rule_page.define_json_rule(rule_data)
-        self.rule_page.select_trigger_type("recurring", interval="weekly")
-        self.rule_page.save_rule()
-        assert self.rule_page.validate_rule_acceptance(), "Rule was not accepted by the system."
-        # Simulate passing of several weeks (UI validation)
-        assert self.rule_page.simulate_trigger_action("SCENARIO-2"), "Transfer action was not executed at each interval."
-        assert self.rule_page.validate_rule_execution(), "Rule action was not executed."
+        rule_id = "TC-FT-002"
+        rule_name = "Weekly Recurring Transfer Rule"
+        interval = "weekly"
+        percentage = 10
+        # Create rule
+        result = self.rule_page.create_recurring_rule(rule_id, rule_name, interval, percentage)
+        assert result, "Rule was not accepted by the system."
+        # Simulate passing of several weeks
+        self.rule_page.simulate_time_reaching_trigger()
+        # Validate transfer action
+        assert self.rule_page.validate_transfer_action(), "Transfer action was not executed at each interval."
