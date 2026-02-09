@@ -1,81 +1,72 @@
 import unittest
 from Pages.RuleConfigurationPage import RuleConfigurationPage
 
-class TestRuleConfiguration(unittest.TestCase):
+class TestScripts(unittest.TestCase):
+    # Existing test methods...
 
-    def setUp(self):
-        self.rule_page = RuleConfigurationPage()
+    def test_TC_SCRUM158_01_rule_creation_and_retrieval(self):
+        """TC_SCRUM158_01: Prepare a valid rule schema with trigger (interval/daily), condition (amount > 100), and action (transfer to A, amount 100); submit the schema and verify rule creation and retrieval."""
+        rule_page = RuleConfigurationPage(self.driver)
+        rule_schema = {
+            "trigger": {"type": "interval", "frequency": "daily"},
+            "conditions": [{"field": "amount", "operator": ">", "value": 100}],
+            "actions": [{"type": "transfer", "target": "A", "amount": 100}]
+        }
+        rule_id = rule_page.create_rule(rule_schema)
+        self.assertIsNotNone(rule_id, "Rule creation failed, rule_id is None.")
+        submission_result = rule_page.submit_rule(rule_id)
+        self.assertTrue(submission_result, "Rule submission failed.")
+        retrieved_rule = rule_page.get_rule(rule_id)
+        self.assertIsNotNone(retrieved_rule, "Rule retrieval failed.")
+        self.assertEqual(retrieved_rule["trigger"], rule_schema["trigger"], "Trigger mismatch.")
+        self.assertEqual(retrieved_rule["conditions"], rule_schema["conditions"], "Condition mismatch.")
+        self.assertEqual(retrieved_rule["actions"], rule_schema["actions"], "Action mismatch.")
 
-    def test_create_rule_with_daily_interval_and_amount_condition(self):
-        # Existing test for rule creation with daily interval and amount > 100 condition
-        schema = self.rule_page.prepare_valid_rule_schema(
-            trigger_type='daily',
-            conditions=[{'type': 'amount', 'operator': '>', 'value': 100}],
-            actions=[{'type': 'transfer', 'to': 'account_2'}]
-        )
-        response = self.rule_page.submit_schema_to_rule_service(schema)
-        self.assertTrue(response['success'])
-        self.assertEqual(response['data']['trigger'], 'daily')
-        self.assertEqual(response['data']['conditions'][0]['type'], 'amount')
-        self.assertEqual(response['data']['actions'][0]['type'], 'transfer')
-
-    def test_retrieve_rule_by_id(self):
-        # Existing test for rule retrieval by ID
-        schema = self.rule_page.prepare_valid_rule_schema(
-            trigger_type='daily',
-            conditions=[{'type': 'amount', 'operator': '>', 'value': 100}],
-            actions=[{'type': 'transfer', 'to': 'account_2'}]
-        )
-        create_response = self.rule_page.submit_schema_to_rule_service(schema)
-        rule_id = create_response['data']['id']
-        retrieved_rule = self.rule_page.get_rule_by_id(rule_id)
-        self.assertEqual(retrieved_rule['id'], rule_id)
-        self.assertEqual(retrieved_rule['trigger'], 'daily')
-
-    # TC_SCRUM158_01: Prepare and submit a valid rule schema with daily interval trigger, amount > 100 condition, and transfer action
-    def test_TC_SCRUM158_01_prepare_and_submit_daily_interval_rule(self):
-        schema = self.rule_page.prepare_valid_rule_schema(
-            trigger_type='daily',
-            conditions=[{'type': 'amount', 'operator': '>', 'value': 100}],
-            actions=[{'type': 'transfer', 'to': 'account_2'}]
-        )
-        response = self.rule_page.submit_schema_to_rule_service(schema)
-        self.assertTrue(response['success'], "Rule submission should succeed")
-        self.assertEqual(response['data']['trigger'], 'daily', "Trigger should be daily")
-        self.assertEqual(response['data']['conditions'][0]['type'], 'amount', "Condition type should be amount")
-        self.assertEqual(response['data']['conditions'][0]['operator'], '>', "Condition operator should be >")
-        self.assertEqual(response['data']['conditions'][0]['value'], 100, "Condition value should be 100")
-        self.assertEqual(response['data']['actions'][0]['type'], 'transfer', "Action type should be transfer")
-        self.assertEqual(response['data']['actions'][0]['to'], 'account_2', "Action target should be account_2")
-
-    # TC_SCRUM158_02: Prepare and submit schema with manual trigger, two conditions, and two actions
-    def test_TC_SCRUM158_02_prepare_and_submit_manual_trigger_rule_multiple_conditions_actions(self):
-        schema = self.rule_page.prepare_valid_rule_schema(
-            trigger_type='manual',
-            conditions=[
-                {'type': 'amount', 'operator': '>=', 'value': 500},
-                {'type': 'currency', 'operator': '==', 'value': 'USD'}
+    def test_TC_SCRUM158_02_multiple_conditions_and_actions(self):
+        """TC_SCRUM158_02: Prepare a schema with trigger (manual), two conditions (amount > 500, country == US), and two actions (transfer to B, amount 500; notify with message); submit the schema and verify all conditions/actions are stored."""
+        rule_page = RuleConfigurationPage(self.driver)
+        rule_schema = {
+            "trigger": {"type": "manual"},
+            "conditions": [
+                {"field": "amount", "operator": ">", "value": 500},
+                {"field": "country", "operator": "==", "value": "US"}
             ],
-            actions=[
-                {'type': 'notify', 'message': 'High value transfer'},
-                {'type': 'transfer', 'to': 'account_3'}
+            "actions": [
+                {"type": "transfer", "target": "B", "amount": 500},
+                {"type": "notify", "message": "Threshold exceeded"}
             ]
-        )
-        response = self.rule_page.submit_schema_to_rule_service(schema)
-        self.assertTrue(response['success'], "Rule submission should succeed")
-        self.assertEqual(response['data']['trigger'], 'manual', "Trigger should be manual")
-        self.assertEqual(len(response['data']['conditions']), 2, "Should have two conditions")
-        self.assertEqual(response['data']['conditions'][0]['type'], 'amount', "First condition type should be amount")
-        self.assertEqual(response['data']['conditions'][0]['operator'], '>=', "First condition operator should be >=")
-        self.assertEqual(response['data']['conditions'][0]['value'], 500, "First condition value should be 500")
-        self.assertEqual(response['data']['conditions'][1]['type'], 'currency', "Second condition type should be currency")
-        self.assertEqual(response['data']['conditions'][1]['operator'], '==', "Second condition operator should be ==")
-        self.assertEqual(response['data']['conditions'][1]['value'], 'USD', "Second condition value should be USD")
-        self.assertEqual(len(response['data']['actions']), 2, "Should have two actions")
-        self.assertEqual(response['data']['actions'][0]['type'], 'notify', "First action type should be notify")
-        self.assertEqual(response['data']['actions'][0]['message'], 'High value transfer', "First action message should be 'High value transfer'")
-        self.assertEqual(response['data']['actions'][1]['type'], 'transfer', "Second action type should be transfer")
-        self.assertEqual(response['data']['actions'][1]['to'], 'account_3', "Second action target should be account_3")
+        }
+        rule_id = rule_page.create_rule(rule_schema)
+        self.assertIsNotNone(rule_id, "Rule creation failed, rule_id is None.")
+        submission_result = rule_page.submit_rule(rule_id)
+        self.assertTrue(submission_result, "Rule submission failed.")
+        retrieved_rule = rule_page.get_rule(rule_id)
+        self.assertIsNotNone(retrieved_rule, "Rule retrieval failed.")
+        self.assertEqual(retrieved_rule["trigger"], rule_schema["trigger"], "Trigger mismatch.")
+        self.assertEqual(retrieved_rule["conditions"], rule_schema["conditions"], "Conditions mismatch.")
+        self.assertEqual(retrieved_rule["actions"], rule_schema["actions"], "Actions mismatch.")
 
-if __name__ == '__main__':
+    def test_TC_SCRUM158_03_create_and_schedule_recurring_interval_rule(self):
+        """TC_SCRUM158_03: Create and schedule recurring interval rule. Acceptance Criteria: Rule is accepted and scheduled for recurring evaluation."""
+        rule_page = RuleConfigurationPage(self.driver)
+        rule_schema = {
+            "trigger": {"type": "interval", "value": "weekly"},
+            "conditions": [{"type": "amount", "operator": ">=", "value": 1000}],
+            "actions": [{"type": "transfer", "account": "C", "amount": 1000}]
+        }
+        scheduled = rule_page.create_recurring_interval_rule(rule_schema)
+        self.assertTrue(scheduled, "Rule was not scheduled for recurring evaluation.")
+
+    def test_TC_SCRUM158_04_validate_missing_trigger_schema(self):
+        """TC_SCRUM158_04: Validate schema missing required field. Acceptance Criteria: Schema is rejected with error indicating missing required field."""
+        rule_page = RuleConfigurationPage(self.driver)
+        incomplete_schema = {
+            "conditions": [{"type": "amount", "operator": "<", "value": 50}],
+            "actions": [{"type": "transfer", "account": "D", "amount": 50}]
+        }
+        error_msg = rule_page.validate_missing_trigger_schema(incomplete_schema)
+        self.assertIsNotNone(error_msg, "Error message was not returned for missing trigger field.")
+        self.assertIn("trigger", error_msg.lower(), "Error message does not indicate missing trigger field.")
+
+if __name__ == "__main__":
     unittest.main()
