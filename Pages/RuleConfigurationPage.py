@@ -1,152 +1,131 @@
-# imports
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.remote.webdriver import WebDriver
-import datetime
-import time
 
 class RuleConfigurationPage:
     """
     Page Object for Rule Configuration Page.
-    Implements methods for defining rules with specific_date and recurring triggers,
-    simulating system time for trigger execution, and validating rule acceptance and execution.
+    Handles rule creation, trigger setup (specific_date and recurring),
+    action setup (fixed_amount and percentage_of_deposit), conditions, and validation.
     """
 
-    # Locators from Locators.json
-    rule_id_input = (By.ID, "rule-id-field")
-    rule_name_input = (By.NAME, "rule-name")
-    save_rule_button = (By.CSS_SELECTOR, "button[data-testid='save-rule-btn']")
-
-    trigger_type_dropdown = (By.ID, "trigger-type-select")
-    date_picker = (By.CSS_SELECTOR, "input[type='date']")
-    recurring_interval_input = (By.ID, "interval-value")
-    after_deposit_toggle = (By.ID, "trigger-after-deposit")
-
-    add_condition_btn = (By.ID, "add-condition-link")
-    condition_type_dropdown = (By.CSS_SELECTOR, "select.condition-type")
-    balance_threshold_input = (By.CSS_SELECTOR, "input[name='balance-limit']")
-    transaction_source_dropdown = (By.ID, "source-provider-select")
-    operator_dropdown = (By.CSS_SELECTOR, ".condition-operator-select")
-
-    action_type_dropdown = (By.ID, "action-type-select")
-    transfer_amount_input = (By.NAME, "fixed-amount")
-    percentage_input = (By.ID, "deposit-percentage")
-    destination_account_input = (By.ID, "target-account-id")
-
-    json_schema_editor = (By.CSS_SELECTOR, ".monaco-editor")
-    validate_schema_btn = (By.ID, "btn-verify-json")
-    success_message = (By.CSS_SELECTOR, ".alert-success")
-    schema_error_message = (By.CSS_SELECTOR, "[data-testid='error-feedback-text']")
-
-    def __init__(self, driver: WebDriver, timeout: int = 10):
+    def __init__(self, driver):
         self.driver = driver
-        self.wait = WebDriverWait(driver, timeout)
+        self.wait = WebDriverWait(driver, 10)
 
-    def define_rule_specific_date(self, rule_id: str, rule_name: str, trigger_date: str, amount: float):
-        """
-        Define a rule with trigger type 'specific_date' and fixed amount action.
-        :param rule_id: Rule identifier
-        :param rule_name: Rule name
-        :param trigger_date: ISO date string (YYYY-MM-DD)
-        :param amount: Amount to transfer
-        """
-        self.wait.until(EC.visibility_of_element_located(self.rule_id_input)).send_keys(rule_id)
-        self.wait.until(EC.visibility_of_element_located(self.rule_name_input)).send_keys(rule_name)
-        # Set trigger type
-        Select(self.wait.until(EC.element_to_be_clickable(self.trigger_type_dropdown))).select_by_visible_text("specific_date")
-        # Set date
-        date_elem = self.wait.until(EC.visibility_of_element_located(self.date_picker))
-        date_elem.clear()
-        date_elem.send_keys(trigger_date)
-        # Set action type
-        Select(self.wait.until(EC.element_to_be_clickable(self.action_type_dropdown))).select_by_visible_text("fixed_amount")
-        # Set amount
-        self.wait.until(EC.visibility_of_element_located(self.transfer_amount_input)).clear()
-        self.wait.until(EC.visibility_of_element_located(self.transfer_amount_input)).send_keys(str(amount))
-        # Save rule
-        self.wait.until(EC.element_to_be_clickable(self.save_rule_button)).click()
+        # Locators (example structure, replace with actual from Locators.json)
+        self.locators = {
+            "rule_form": (By.ID, "ruleForm"),
+            "trigger_type_dropdown": (By.ID, "triggerType"),
+            "trigger_date_input": (By.ID, "triggerDate"),
+            "trigger_interval_dropdown": (By.ID, "triggerInterval"),
+            "action_type_dropdown": (By.ID, "actionType"),
+            "fixed_amount_input": (By.ID, "fixedAmount"),
+            "percentage_input": (By.ID, "percentageOfDeposit"),
+            "add_condition_btn": (By.ID, "addCondition"),
+            "condition_field": (By.CLASS_NAME, "conditionField"),
+            "submit_btn": (By.ID, "submitRule"),
+            "validation_message": (By.ID, "validationMessage"),
+            "rule_list": (By.ID, "ruleList"),
+        }
 
-    def define_rule_recurring_weekly(self, rule_id: str, rule_name: str, percentage: float):
-        """
-        Define a rule with trigger type 'recurring', interval 'weekly', and percentage action.
-        :param rule_id: Rule identifier
-        :param rule_name: Rule name
-        :param percentage: Percentage of deposit to transfer
-        """
-        self.wait.until(EC.visibility_of_element_located(self.rule_id_input)).send_keys(rule_id)
-        self.wait.until(EC.visibility_of_element_located(self.rule_name_input)).send_keys(rule_name)
-        # Set trigger type
-        Select(self.wait.until(EC.element_to_be_clickable(self.trigger_type_dropdown))).select_by_visible_text("recurring")
-        # Set interval
-        interval_elem = self.wait.until(EC.visibility_of_element_located(self.recurring_interval_input))
-        interval_elem.clear()
-        interval_elem.send_keys("weekly")
-        # Set action type
-        Select(self.wait.until(EC.element_to_be_clickable(self.action_type_dropdown))).select_by_visible_text("percentage_of_deposit")
-        # Set percentage
-        self.wait.until(EC.visibility_of_element_located(self.percentage_input)).clear()
-        self.wait.until(EC.visibility_of_element_located(self.percentage_input)).send_keys(str(percentage))
-        # Save rule
-        self.wait.until(EC.element_to_be_clickable(self.save_rule_button)).click()
+    def open_rule_form(self):
+        self.wait.until(EC.visibility_of_element_located(self.locators["rule_form"]))
 
-    def simulate_system_time(self, target_datetime: datetime.datetime):
-        """
-        Simulate system time reaching the trigger date.
-        This is a placeholder. Actual implementation would require system-level time mocking or backend API.
-        """
-        # Wait until system time matches target_datetime (for demo only, not production safe)
-        now = datetime.datetime.utcnow()
-        wait_seconds = (target_datetime - now).total_seconds()
-        if wait_seconds > 0:
-            time.sleep(wait_seconds)
+    def select_trigger_type(self, trigger_type):
+        trigger_dropdown = self.wait.until(EC.element_to_be_clickable(self.locators["trigger_type_dropdown"]))
+        trigger_dropdown.click()
+        option = self.driver.find_element(By.XPATH, f"//select[@id='triggerType']/option[@value='{trigger_type}']")
+        option.click()
 
-    def simulate_weekly_intervals(self, weeks: int, interval_callback):
-        """
-        Simulate passing of several weeks and execute callback at each interval.
-        :param weeks: Number of weeks to simulate
-        :param interval_callback: Function to call at each interval
-        """
-        for week in range(weeks):
-            interval_callback(week)
-            # Simulate waiting for a week (for demo, reduce to seconds)
-            time.sleep(1)  # Replace with actual time simulation if possible
+    def set_specific_date_trigger(self, date_str):
+        self.select_trigger_type("specific_date")
+        date_input = self.wait.until(EC.visibility_of_element_located(self.locators["trigger_date_input"]))
+        date_input.clear()
+        date_input.send_keys(date_str)
 
-    def validate_rule_acceptance(self):
-        """
-        Validate that rule is accepted by the system.
-        Returns True if success message is found, False otherwise.
-        """
-        try:
-            success = self.wait.until(EC.visibility_of_element_located(self.success_message))
-            return success is not None
-        except TimeoutException:
-            return False
+    def set_recurring_trigger(self, interval):
+        self.select_trigger_type("recurring")
+        interval_dropdown = self.wait.until(EC.element_to_be_clickable(self.locators["trigger_interval_dropdown"]))
+        interval_dropdown.click()
+        option = self.driver.find_element(By.XPATH, f"//select[@id='triggerInterval']/option[@value='{interval}']")
+        option.click()
 
-    def validate_rule_execution(self):
-        """
-        Validate that transfer action is executed.
-        Returns True if success message is found after execution, False otherwise.
-        """
-        try:
-            success = self.wait.until(EC.visibility_of_element_located(self.success_message))
-            return success is not None
-        except TimeoutException:
-            return False
+    def select_action_type(self, action_type):
+        action_dropdown = self.wait.until(EC.element_to_be_clickable(self.locators["action_type_dropdown"]))
+        action_dropdown.click()
+        option = self.driver.find_element(By.XPATH, f"//select[@id='actionType']/option[@value='{action_type}']")
+        option.click()
 
-    def validate_schema(self):
+    def set_fixed_amount_action(self, amount):
+        self.select_action_type("fixed_amount")
+        amount_input = self.wait.until(EC.visibility_of_element_located(self.locators["fixed_amount_input"]))
+        amount_input.clear()
+        amount_input.send_keys(str(amount))
+
+    def set_percentage_of_deposit_action(self, percentage):
+        self.select_action_type("percentage_of_deposit")
+        percentage_input = self.wait.until(EC.visibility_of_element_located(self.locators["percentage_input"]))
+        percentage_input.clear()
+        percentage_input.send_keys(str(percentage))
+
+    def add_condition(self, condition_text):
+        add_btn = self.wait.until(EC.element_to_be_clickable(self.locators["add_condition_btn"]))
+        add_btn.click()
+        condition_field = self.wait.until(EC.visibility_of_element_located(self.locators["condition_field"]))
+        condition_field.send_keys(condition_text)
+
+    def submit_rule(self):
+        submit_btn = self.wait.until(EC.element_to_be_clickable(self.locators["submit_btn"]))
+        submit_btn.click()
+
+    def get_validation_message(self):
+        msg_elem = self.wait.until(EC.visibility_of_element_located(self.locators["validation_message"]))
+        return msg_elem.text
+
+    def rule_exists_in_list(self, rule_desc):
+        rule_list = self.wait.until(EC.visibility_of_element_located(self.locators["rule_list"]))
+        return rule_desc in rule_list.text
+
+    def create_rule(self, rule_json):
         """
-        Click validate schema button and check for success or error message.
-        Returns 'success' or 'error' depending on outcome.
+        Orchestrates rule creation from JSON:
+        {
+            "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"}
+            "action": {"type": "fixed_amount", "amount": 100}
+            "conditions": []
+        }
         """
-        self.wait.until(EC.element_to_be_clickable(self.validate_schema_btn)).click()
-        try:
-            self.wait.until(EC.visibility_of_element_located(self.success_message))
-            return 'success'
-        except TimeoutException:
-            try:
-                self.wait.until(EC.visibility_of_element_located(self.schema_error_message))
-                return 'error'
-            except TimeoutException:
-                return 'unknown'
+        self.open_rule_form()
+        trigger = rule_json.get("trigger", {})
+        action = rule_json.get("action", {})
+        conditions = rule_json.get("conditions", [])
+
+        # Trigger setup
+        if trigger.get("type") == "specific_date":
+            self.set_specific_date_trigger(trigger.get("date", ""))
+        elif trigger.get("type") == "recurring":
+            self.set_recurring_trigger(trigger.get("interval", ""))
+
+        # Action setup
+        if action.get("type") == "fixed_amount":
+            self.set_fixed_amount_action(action.get("amount", ""))
+        elif action.get("type") == "percentage_of_deposit":
+            self.set_percentage_of_deposit_action(action.get("percentage", ""))
+
+        # Conditions
+        for cond in conditions:
+            self.add_condition(cond)
+
+        self.submit_rule()
+        return self.get_validation_message()
+
+    def validate_rule_execution(self, rule_desc, expected=True):
+        """
+        Validates if a rule exists in the rule list.
+        """
+        exists = self.rule_exists_in_list(rule_desc)
+        if expected:
+            assert exists, f"Rule '{rule_desc}' not found in list."
+        else:
+            assert not exists, f"Rule '{rule_desc}' should not exist in list."
