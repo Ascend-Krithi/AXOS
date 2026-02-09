@@ -31,9 +31,9 @@ class TestRuleManagement:
         self.transaction_page = TransactionPage(driver)
 
     def test_define_specific_date_rule(self):
-        """
+        '''
         TC-FT-001: Define a JSON rule with trigger type 'specific_date' set to a future date, simulate system time reaching the trigger date, and verify transfer action is executed once.
-        """
+        '''
         rule_data = {
             'name': 'Specific Date Rule',
             'trigger': 'specific_date',
@@ -59,9 +59,9 @@ class TestRuleManagement:
         assert self.transaction_page.is_transaction_successful() is True
 
     def test_define_recurring_rule(self):
-        """
+        '''
         TC-FT-002: Define a JSON rule with trigger type 'recurring' and interval 'weekly', simulate passing of several weeks, and verify transfer action is executed at each interval.
-        """
+        '''
         rule_data = {
             'name': 'Weekly Recurring Rule',
             'trigger': 'recurring',
@@ -85,3 +85,63 @@ class TestRuleManagement:
             self.transaction_page.open()
             self.transaction_page.perform_transaction({'amount': 100, 'type': 'deposit', 'percentage': 10})
             assert self.transaction_page.is_transaction_successful() is True
+
+    def test_rule_with_multiple_conditions(self):
+        '''
+        TC-FT-003: Step 1: Define a rule with multiple conditions (balance >= 1000, source = 'salary'). Step 2: Simulate deposit from 'salary' when balance is 900. Step 3: Simulate deposit from 'salary' when balance is 1200.
+        '''
+        # Step 1: Define rule
+        self.rule_page.open()
+        self.rule_page.define_rule(
+            trigger_type='after_deposit',
+            action_type='fixed_amount',
+            action_amount=50,
+            conditions=[
+                {'type': 'balance_threshold', 'operator': '>=', 'value': 1000},
+                {'type': 'transaction_source', 'value': 'salary'}
+            ]
+        )
+        self.rule_page.submit_rule()
+        assert self.rule_page.is_rule_accepted() is True
+
+        # Step 2: Simulate deposit with balance 900, source 'salary'
+        self.transaction_page.open()
+        self.transaction_page.simulate_deposit(balance=900, deposit=100, source='salary')
+        assert self.transaction_page.is_transfer_not_executed() is True
+
+        # Step 3: Simulate deposit with balance 1200, source 'salary'
+        self.transaction_page.open()
+        self.transaction_page.simulate_deposit(balance=1200, deposit=100, source='salary')
+        assert self.transaction_page.is_transfer_executed() is True
+
+    def test_rule_missing_trigger_type(self):
+        '''
+        TC-FT-004: Step 1: Submit a rule with missing trigger type. Expect error indicating missing required field.
+        '''
+        self.rule_page.open()
+        self.rule_page.define_rule(
+            trigger_type=None,
+            action_type='fixed_amount',
+            action_amount=100,
+            conditions=[]
+        )
+        self.rule_page.submit_rule()
+        error_message = self.rule_page.get_error_message()
+        validation_error = self.rule_page.get_validation_error()
+        assert error_message is not None or validation_error is not None
+
+    def test_rule_unsupported_action_type(self):
+        '''
+        TC-FT-004: Step 2: Submit a rule with unsupported action type. Expect error indicating unsupported action type.
+        '''
+        self.rule_page.open()
+        self.rule_page.define_rule(
+            trigger_type='specific_date',
+            action_type='unknown_action',
+            action_amount=None,
+            conditions=[]
+        )
+        self.rule_page.submit_rule()
+        error_message = self.rule_page.get_error_message()
+        validation_error = self.rule_page.get_validation_error()
+        assert error_message is not None or validation_error is not None
