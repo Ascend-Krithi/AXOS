@@ -219,21 +219,21 @@ class TestRuleConfiguration:
         assert result is True, "Large metadata rule was not accepted or performance was not within limits."
 
     # --- Appended for TC_SCRUM158_09 ---
-    def test_TC_SCRUM158_09_malicious_script_injection(self):
+    def test_TC_SCRUM158_09_malicious_metadata_script_rejection(self):
         """
-        TC_SCRUM158_09: Prepare a schema with metadata containing a malicious script, submit, verify error returned, and no injection occurs.
+        TC_SCRUM158_09: Prepare a schema with metadata containing a malicious script, submit, and verify error returned and no injection occurs.
         """
-        schema_name = "TC_SCRUM158_09_Malicious"
-        script = "<script>alert('hack')</script>"
-        result = self.rule_page.add_rule_schema_with_malicious_script(schema_name, script)
-        assert result is True, "Malicious script was not properly rejected or error not shown."
+        schema_name = "MaliciousScriptSchema"
+        malicious_script = "<script>alert('hack')</script>"
+        result = self.rule_page.add_rule_schema_with_malicious_script(schema_name, malicious_script)
+        assert result is True, "Malicious metadata script was not properly rejected or script was injected."
 
     # --- Appended for TC_SCRUM158_10 ---
-    def test_TC_SCRUM158_10_unsupported_trigger_type(self):
+    def test_TC_SCRUM158_10_unsupported_trigger_type_rejection(self):
         """
-        TC_SCRUM158_10: Prepare a schema with unsupported trigger type, submit, and verify extensibility error or warning.
+        TC_SCRUM158_10: Prepare a schema with unsupported trigger type, submit, and verify extensibility warning and schema is rejected.
         """
-        schema_name = "TC_SCRUM158_10_Unsupported"
-        trigger_type = "future_type"
-        result = self.rule_page.add_rule_schema_with_unsupported_trigger(schema_name, trigger_type)
-        assert result is True, "Unsupported trigger type was not gracefully rejected or extensibility warning not shown."
+        schema_name = "UnsupportedTriggerSchema"
+        unsupported_trigger_type = "future_type"
+        result = self.rule_page.add_rule_schema_with_unsupported_trigger(schema_name, unsupported_trigger_type)
+        assert result is True, "Unsupported trigger type was not gracefully rejected or extensibility warning was not shown."
