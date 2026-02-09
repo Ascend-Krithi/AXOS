@@ -35,6 +35,27 @@ class TestLoginFunctionality:
         result = self.login_page.validate_login_missing_password(login_url, valid_email, expected_error)
         assert result, f"Expected error message '{expected_error}' not shown for missing password."
 
+    async def test_TC_Login_01_valid_login(self):
+        """
+        TC_Login_01: Navigate to login page, enter valid credentials, click login, validate success.
+        """
+        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        valid_email = "user@example.com"
+        valid_password = "ValidPassword123"
+        result = self.login_page.validate_successful_login(login_url, valid_email, valid_password)
+        assert result, "Valid login failed: User was not redirected to dashboard."
+
+    async def test_TC_Login_02_invalid_login(self):
+        """
+        TC_Login_02: Navigate to login page, enter invalid credentials, click login, validate error message.
+        """
+        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        invalid_email = "wronguser@example.com"
+        invalid_password = "WrongPassword"
+        expected_error = "Invalid credentials"
+        result = self.login_page.validate_invalid_login(login_url, invalid_email, invalid_password, expected_error)
+        assert result, f"Expected error message '{expected_error}' not shown for invalid login."
+
 class TestRuleConfiguration:
     def __init__(self, page):
         self.page = page
