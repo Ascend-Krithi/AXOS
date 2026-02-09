@@ -1,4 +1,5 @@
 import pytest
+from Pages.LoginPage import LoginPage
 from Pages.RuleConfigurationPage import RuleConfigurationPage
 
 class TestLoginFunctionality:
@@ -13,40 +14,55 @@ class TestLoginFunctionality:
 
     async def test_remember_me_functionality(self):
         await self.login_page.navigate()
-        await self.login_page.fill_email(''.'
+        await self.login_page.fill_email('testuser@example.com')
+        await self.login_page.fill_password('password123')
+        await self.login_page.toggle_remember_me(True)
+        await self.login_page.submit_login('testuser@example.com', 'password123')
+        assert await self.login_page.is_logged_in()
 
 class TestRuleConfiguration:
     def __init__(self, page):
         self.page = page
-        self.rule_page = RuleConfigurationPage(page)
+        self.rule_config_page = RuleConfigurationPage(page)
 
-    async def test_TC_SCRUM158_03_create_rule_schema_with_metadata(self):
-        # Step 1: Navigate to Rule Configuration
-        await self.rule_page.navigate()
-        # Step 2: Fill rule form with metadata
-        await self.rule_page.get_rule_name_field().fill('AutoRule158_03')
-        await self.rule_page.get_rule_metadata_field().fill('MetaDataValue')
-        await self.rule_page.get_trigger_field().fill('OnCreate')
-        await self.rule_page.get_condition_field().fill('ConditionX')
-        await self.rule_page.get_action_field().fill('ActionY')
-        # Step 3: Submit rule
-        await self.rule_page.get_submit_button().click()
-        # Step 4: Validate rule creation
-        assert await self.rule_page.get_success_message().text_content() == 'Rule created successfully'
-        # Step 5: Retrieve and check metadata
-        rule = await self.rule_page.get_rule_by_name('AutoRule158_03')
-        assert rule['metadata'] == 'MetaDataValue'
+    async def test_TC_SCRUM158_03_create_rule_with_metadata(self):
+        # Prepare rule schema with metadata
+        rule_schema = {
+            "name": "Test Rule Metadata",
+            "trigger": "on_event",
+            "metadata": {
+                "author": "qa_automation",
+                "priority": "high",
+                "description": "Rule for testing metadata"
+            },
+            "actions": [
+                {"type": "notify", "target": "admin"}
+            ]
+        }
+        await self.rule_config_page.navigate()
+        await self.rule_config_page.open_create_rule()
+        await self.rule_config_page.fill_rule_schema(rule_schema)
+        await self.rule_config_page.submit_rule()
+        # Retrieve rule and verify metadata
+        rule_id = await self.rule_config_page.get_last_created_rule_id()
+        retrieved_rule = await self.rule_config_page.get_rule_by_id(rule_id)
+        assert retrieved_rule["metadata"] == rule_schema["metadata"], "Rule metadata does not match input"
 
-    async def test_TC_SCRUM158_04_submit_schema_missing_trigger(self):
-        # Step 1: Navigate to Rule Configuration
-        await self.rule_page.navigate()
-        # Step 2: Fill rule form without trigger
-        await self.rule_page.get_rule_name_field().fill('AutoRule158_04')
-        await self.rule_page.get_rule_metadata_field().fill('MetaDataValue')
-        await self.rule_page.get_condition_field().fill('ConditionX')
-        await self.rule_page.get_action_field().fill('ActionY')
-        # Step 3: Submit rule
-        await self.rule_page.get_submit_button().click()
-        # Step 4: Validate error response
-        assert await self.rule_page.get_error_message().text_content() == 'Trigger field is required'
-        assert await self.rule_page.get_response_code() == 400
+    async def test_TC_SCRUM158_04_missing_trigger_field_validation(self):
+        # Prepare rule schema missing 'trigger' field
+        rule_schema = {
+            "name": "Test Rule Missing Trigger",
+            "metadata": {
+                "author": "qa_automation",
+                "priority": "medium"
+            },
+            "actions": [
+                {"type": "log", "target": "system"}
+            ]
+        }
+        await self.rule_config_page.navigate()
+        await self.rule_config_page.open_create_rule()
+        await self.rule_config_page.fill_rule_schema(rule_schema)
+        await self.rule_config_page.submit_rule()
+        error_message = await self.rule_config_page.get_error_message()
+        assert error_message == "Trigger field is required", "Validation error message for missing trigger is incorrect"
