@@ -4,6 +4,7 @@ PageClass for Login Page
 Covers: TC_LOGIN_002 (invalid credentials), TC_LOGIN_003 (empty fields), TC_Login_10 (max length validation), TC_LOGIN_004 (max length validation)
 Strict adherence to Selenium Python best practices, atomic methods, robust locator handling, and comprehensive docstrings.
 """
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -25,6 +26,10 @@ class LoginPage:
     LOGIN_BUTTON = (By.ID, "loginBtn")
     REMEMBER_ME_CHECKBOX = (By.ID, "rememberMe")  # Assumed locator
     ERROR_MESSAGE = (By.ID, "errorMsg")
+    # --- Locators for lockout/captcha/rate limiting ---
+    CAPTCHA_ELEMENT = (By.ID, "captcha")  # Assumed generic locator for captcha
+    LOCKOUT_MESSAGE = (By.ID, "lockoutMsg")  # Assumed generic locator for lockout
+    RATE_LIMIT_MESSAGE = (By.ID, "rateLimitMsg")  # Assumed generic locator for rate limiting
 
     def __init__(self, driver: WebDriver):
         """
@@ -196,5 +201,90 @@ class LoginPage:
             "email_field": email_ok,
             "password_field": password_ok,
             "login_result": login_success,
+            "error_message": error_msg
+        }
+
+    # --- TC_LOGIN_009: Rapid invalid login attempts and rate limiting/lockout/captcha validation ---
+    def perform_rapid_invalid_login_attempts(self, email: str, password: str, attempts: int = 10) -> dict:
+        """
+        Performs rapid invalid login attempts and validates rate limiting, lockout, or captcha mechanisms.
+        :param email: Invalid email/username to use for attempts
+        :param password: Invalid password to use for attempts
+        :param attempts: Number of rapid attempts (default: 10)
+        :return: Dict with keys 'lockout_detected', 'rate_limit_detected', 'captcha_detected', 'final_error_message'
+        """
+        lockout_detected = False
+        rate_limit_detected = False
+        captcha_detected = False
+        final_error_message = ""
+
+        for i in range(attempts):
+            self.enter_email(email)
+            self.enter_password(password)
+            self.click_login()
+            # Wait for error or lockout/captcha/rate limit
+            try:
+                error_msg = self.wait.until(EC.visibility_of_element_located(self.ERROR_MESSAGE)).text.strip()
+                final_error_message = error_msg
+            except Exception:
+                final_error_message = ""
+
+            # Check for lockout message
+            try:
+                lockout_elem = self.driver.find_element(*self.LOCKOUT_MESSAGE)
+                if lockout_elem.is_displayed():
+                    lockout_detected = True
+                    final_error_message = lockout_elem.text.strip()
+                    break
+            except Exception:
+                pass
+
+            # Check for rate limit message
+            try:
+                rate_limit_elem = self.driver.find_element(*self.RATE_LIMIT_MESSAGE)
+                if rate_limit_elem.is_displayed():
+                    rate_limit_detected = True
+                    final_error_message = rate_limit_elem.text.strip()
+                    break
+            except Exception:
+                pass
+
+            # Check for captcha element
+            try:
+                captcha_elem = self.driver.find_element(*self.CAPTCHA_ELEMENT)
+                if captcha_elem.is_displayed():
+                    captcha_detected = True
+                    final_error_message = "Captcha triggered"
+                    break
+            except Exception:
+                pass
+
+        return {
+            "lockout_detected": lockout_detected,
+            "rate_limit_detected": rate_limit_detected,
+            "captcha_detected": captcha_detected,
+            "final_error_message": final_error_message
+        }
+
+    # --- TC_LOGIN_010: Case sensitivity login validation ---
+    def login_with_case_sensitive_credentials(self, email: str, password: str) -> dict:
+        """
+        Attempts login with email/username and password using different cases to validate case sensitivity.
+        :param email: Email/username with altered case
+        :param password: Password with altered case
+        :return: Dict with keys 'login_success', 'error_message'
+        """
+        self.enter_email(email)
+        self.enter_password(password)
+        self.click_login()
+        # Wait for result
+        error_msg = ""
+        try:
+            error_msg = self.wait.until(EC.visibility_of_element_located(self.ERROR_MESSAGE)).text.strip()
+        except Exception:
+            pass
+        login_success = error_msg == ""  # Assume empty error means success
+        return {
+            "login_success": login_success,
             "error_message": error_msg
         }
