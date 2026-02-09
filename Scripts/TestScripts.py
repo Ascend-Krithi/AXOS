@@ -144,12 +144,17 @@ class TestRuleManagementBulkAndSecurity:
             }
             for _ in range(10000)
         ]
-        # Load bulk rules
-        self.rule_mgmt_page.load_bulk_rules(bulk_rules)
-        # Evaluate all rules
-        self.rule_mgmt_page.evaluate_all_rules()
-        # Verify performance (e.g., must complete within 60 seconds)
-        self.rule_mgmt_page.verify_bulk_performance(max_time_seconds=60)
+        # Load bulk rules using both PageClasses
+        elapsed_mgmt = self.rule_mgmt_page.load_bulk_rules(bulk_rules)
+        elapsed_manager = self.rule_manager_page.load_bulk_rules(bulk_rules)
+        # Trigger evaluation for all rules
+        eval_mgmt = self.rule_mgmt_page.trigger_bulk_evaluation()
+        eval_manager = self.rule_manager_page.trigger_bulk_evaluation()
+        # Assert performance thresholds
+        assert elapsed_mgmt < 60, f"RuleManagementPage loading exceeded time: {elapsed_mgmt} seconds"
+        assert elapsed_manager < 60, f"RuleManagerPage loading exceeded time: {elapsed_manager} seconds"
+        assert eval_mgmt < 60, f"RuleManagementPage evaluation exceeded time: {eval_mgmt} seconds"
+        assert eval_manager < 60, f"RuleManagerPage evaluation exceeded time: {eval_manager} seconds"
 
     def test_sql_injection_rule_is_rejected(self):
         """
@@ -162,4 +167,6 @@ class TestRuleManagementBulkAndSecurity:
             "action": {"type": "fixed_amount", "amount": 100},
             "conditions": [{"type": "balance_threshold", "value": "1000; DROP TABLE users;--"}]
         }
-        self.rule_manager_page.submit_sql_injection_rule(sql_injection_rule)
+        # Use both PageClasses for validation
+        self.rule_mgmt_page.validate_sql_injection_rule(sql_injection_rule)
+        self.rule_manager_page.validate_sql_injection_rule(sql_injection_rule)
