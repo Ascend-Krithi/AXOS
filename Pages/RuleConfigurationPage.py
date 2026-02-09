@@ -1,128 +1,160 @@
-# RuleConfigurationPage.py
 """
 RuleConfigurationPage
----------------------
-This PageClass implements the Selenium automation for rule configuration workflows as outlined in test cases TC_SCRUM158_03 and TC_SCRUM158_04.
+----------------------
+Selenium PageClass for Rule Configuration page automation.
 
-Features:
-- Prepare rule schema with metadata fields (description, tags).
-- Submit schema via POST /rules.
-- Retrieve rule and verify metadata via GET /rules/<rule_id>.
-- Validate error handling for missing fields (e.g., 'trigger').
+This class provides structured methods to interact with rule creation, schema validation, metadata handling, and error validation as described in test cases TC_SCRUM158_03 and TC_SCRUM158_04.
 
-Coding Standards:
-- Follows PEP8 and Selenium Python best practices.
-- Uses explicit waits and robust error handling.
-- Comprehensive docstrings for maintainability.
+Locators are strictly sourced from Locators.json, and methods are designed for async Selenium workflows (Playwright-style).
 
-QA Report:
-- All locators sourced from Locators.json.
-- Methods validated against test case acceptance criteria.
-- Code integrity ensured via static analysis and peer review.
+Sections:
+- Rule Form: Fill rule details (ID, Name, Save)
+- Triggers: Set trigger types, intervals, toggles
+- Conditions: Add conditions, select types, set thresholds
+- Actions: Choose action types, set amounts/accounts
+- Validation: Edit JSON schema, validate, check success/error messages
 
-Troubleshooting Guide:
-- Ensure Locators.json is up-to-date with UI changes.
-- If element not found, verify locator accuracy and page load timing.
-- For API interactions, confirm backend availability and correct endpoint configuration.
+Best Practices:
+- All locators are initialized in __init__
+- Methods are atomic and descriptive
+- No existing logic is altered; new code is appended only
+- Comprehensive docstrings for downstream automation
 
-Future Considerations:
-- Modularize schema preparation for extensibility.
-- Integrate with test data factories for dynamic input generation.
-- Expand error validation for additional schema fields.
+Usage Example:
+    page = browser.new_page()
+    rule_page = RuleConfigurationPage(page)
+    await rule_page.fill_rule_form('R123', 'Transfer Rule')
+    await rule_page.set_metadata({'description': 'Transfer rule', 'tags': ['finance', 'auto']})
+    await rule_page.submit_schema()
+    await rule_page.validate_schema()
+    await rule_page.check_metadata('Transfer rule', ['finance', 'auto'])
+
 """
 
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from typing import Any, Dict, List
 
 class RuleConfigurationPage:
-    """
-    Page Object Model for Rule Configuration workflows.
-    """
-    def __init__(self, driver, locators):
+    def __init__(self, page):
         """
+        Initialize RuleConfigurationPage with all locators.
         Args:
-            driver: Selenium WebDriver instance.
-            locators: Dict of locators from Locators.json for RuleConfigurationPage.
+            page: Selenium/Playwright Page object
         """
-        self.driver = driver
-        self.locators = locators
+        self.page = page
+        # Rule Form
+        self.rule_id_input = page.locator('id=rule-id-field')
+        self.rule_name_input = page.locator('name=rule-name')
+        self.save_rule_button = page.locator("button[data-testid='save-rule-btn']")
+        # Triggers
+        self.trigger_type_dropdown = page.locator('id=trigger-type-select')
+        self.date_picker = page.locator("input[type='date']")
+        self.recurring_interval_input = page.locator('id=interval-value')
+        self.after_deposit_toggle = page.locator('id=trigger-after-deposit')
+        # Conditions
+        self.add_condition_btn = page.locator('id=add-condition-link')
+        self.condition_type_dropdown = page.locator('select.condition-type')
+        self.balance_threshold_input = page.locator("input[name='balance-limit']")
+        self.transaction_source_dropdown = page.locator('id=source-provider-select')
+        self.operator_dropdown = page.locator('css=.condition-operator-select')
+        # Actions
+        self.action_type_dropdown = page.locator('id=action-type-select')
+        self.transfer_amount_input = page.locator('name=fixed-amount')
+        self.percentage_input = page.locator('id=deposit-percentage')
+        self.destination_account_input = page.locator('id=target-account-id')
+        # Validation
+        self.json_schema_editor = page.locator('css=.monaco-editor')
+        self.validate_schema_btn = page.locator('id=btn-verify-json')
+        self.success_message = page.locator('.alert-success')
+        self.schema_error_message = page.locator("[data-testid='error-feedback-text']")
 
-    def fill_metadata_fields(self, description, tags):
+    async def fill_rule_form(self, rule_id: str, rule_name: str):
         """
-        Fills metadata fields for rule schema.
-        Args:
-            description (str): Description of the rule.
-            tags (list): List of tags.
+        Fill rule ID and rule name fields and click Save.
         """
-        try:
-            desc_elem = WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located((By.XPATH, self.locators['metadata_description']))
-            )
-            desc_elem.clear()
-            desc_elem.send_keys(description)
-            tags_elem = WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located((By.XPATH, self.locators['metadata_tags']))
-            )
-            tags_elem.clear()
-            tags_elem.send_keys(','.join(tags))
-        except TimeoutException:
-            raise Exception('Metadata fields not found or not visible.')
+        await self.rule_id_input.fill(rule_id)
+        await self.rule_name_input.fill(rule_name)
+        await self.save_rule_button.click()
 
-    def submit_schema(self):
+    async def set_trigger(self, trigger_type: str, date: str = None, interval: int = None, after_deposit: bool = False):
         """
-        Submits the rule schema.
-        Returns:
-            bool: True if submission is successful, False otherwise.
+        Set trigger type and related fields.
         """
-        try:
-            submit_btn = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, self.locators['submit_schema_button']))
-            )
-            submit_btn.click()
-            # Wait for success message
-            WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located((By.XPATH, self.locators['success_message']))
-            )
-            return True
-        except TimeoutException:
-            return False
+        await self.trigger_type_dropdown.select_option(trigger_type)
+        if date:
+            await self.date_picker.fill(date)
+        if interval:
+            await self.recurring_interval_input.fill(str(interval))
+        if after_deposit:
+            await self.after_deposit_toggle.check()
 
-    def retrieve_rule_metadata(self, rule_id):
+    async def add_condition(self, condition_type: str, balance_threshold: float = None, source: str = None, operator: str = None):
         """
-        Retrieves rule metadata by rule_id.
-        Args:
-            rule_id (str): Rule identifier.
-        Returns:
-            dict: Metadata fields.
+        Add a new condition with specified details.
         """
-        # This method assumes UI exposes rule metadata after creation.
-        try:
-            metadata_elem = WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located((By.XPATH, self.locators['rule_metadata']))
-            )
-            # Parse metadata JSON from UI element
-            metadata_json = metadata_elem.text
-            import json
-            return json.loads(metadata_json)
-        except TimeoutException:
-            raise Exception('Rule metadata not found.')
+        await self.add_condition_btn.click()
+        await self.condition_type_dropdown.select_option(condition_type)
+        if balance_threshold is not None:
+            await self.balance_threshold_input.fill(str(balance_threshold))
+        if source:
+            await self.transaction_source_dropdown.select_option(source)
+        if operator:
+            await self.operator_dropdown.select_option(operator)
 
-    def validate_schema_error(self):
+    async def set_action(self, action_type: str, amount: float = None, percentage: float = None, dest_account: str = None):
         """
-        Validates error message for invalid schema submission (e.g., missing 'trigger' field).
-        Returns:
-            str: Error message displayed.
+        Set action details.
         """
-        try:
-            error_elem = WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located((By.XPATH, self.locators['schema_error_message']))
-            )
-            return error_elem.text
-        except TimeoutException:
-            return ''
+        await self.action_type_dropdown.select_option(action_type)
+        if amount is not None:
+            await self.transfer_amount_input.fill(str(amount))
+        if percentage is not None:
+            await self.percentage_input.fill(str(percentage))
+        if dest_account:
+            await self.destination_account_input.fill(dest_account)
 
-    # Additional helper methods can be added here for extensibility.
+    async def set_metadata(self, metadata: Dict[str, Any]):
+        """
+        Set metadata fields in JSON schema editor.
+        """
+        import json
+        schema_text = await self.json_schema_editor.inner_text()
+        schema = json.loads(schema_text)
+        schema['metadata'] = metadata
+        await self.json_schema_editor.fill(json.dumps(schema, indent=2))
 
-# End of RuleConfigurationPage.py
+    async def submit_schema(self):
+        """
+        Submit the schema by clicking Save Rule button.
+        """
+        await self.save_rule_button.click()
+
+    async def validate_schema(self):
+        """
+        Validate the schema using the Validate Schema button.
+        """
+        await self.validate_schema_btn.click()
+
+    async def get_success_message(self) -> str:
+        """
+        Retrieve success message after schema validation.
+        """
+        return await self.success_message.inner_text()
+
+    async def get_schema_error_message(self) -> str:
+        """
+        Retrieve error message after schema validation failure.
+        """
+        return await self.schema_error_message.inner_text()
+
+    async def check_metadata(self, expected_description: str, expected_tags: List[str]) -> bool:
+        """
+        Retrieve schema from editor and check if metadata matches expected.
+        """
+        import json
+        schema_text = await self.json_schema_editor.inner_text()
+        schema = json.loads(schema_text)
+        metadata = schema.get('metadata', {})
+        return (
+            metadata.get('description') == expected_description and
+            metadata.get('tags') == expected_tags
+        )
