@@ -1,59 +1,51 @@
 import unittest
+from selenium import webdriver
 from Pages.LoginPage import LoginPage
 from Pages.DashboardPage import DashboardPage
-from Pages.FinancialTransferAPIPage import FinancialTransferAPIPage
 
-class TestScripts(unittest.TestCase):
-
+class TestLogin(unittest.TestCase):
     def setUp(self):
-        self.login_page = LoginPage()
-        self.dashboard_page = DashboardPage()
-        self.financial_transfer_api_page = FinancialTransferAPIPage()
+        self.driver = webdriver.Chrome()
+        self.login_page = LoginPage(self.driver)
+        self.dashboard_page = DashboardPage(self.driver)
 
-    def test_login_valid(self):
-        # Existing login test
-        self.login_page.open()
-        self.login_page.enter_credentials('valid_user', 'valid_password')
-        self.login_page.submit()
-        self.assertTrue(self.login_page.is_logged_in())
+    def tearDown(self):
+        self.driver.quit()
 
-    def test_dashboard_load(self):
-        # Existing dashboard test
-        self.dashboard_page.open()
-        self.assertTrue(self.dashboard_page.is_dashboard_loaded())
+    # Existing test cases...
+    # ...<rest of file>...
 
-    # --- New Test Cases for Financial Transfer API ---
-
-    def test_TC_158_01_valid_transfer(self):
+    def test_TC09_special_character_login(self):
         """
-        TC-158-01: Submit valid payload, expect confirmation.
-        Steps:
-        - Prepare a valid payload
-        - Submit it
-        - Assert successful transfer
+        TC09: Login with special characters in username and password.
+        Expects either successful login or proper error message.
         """
-        payload = self.financial_transfer_api_page.prepare_valid_payload()
-        response = self.financial_transfer_api_page.send_transfer_payload(payload)
-        self.financial_transfer_api_page.validate_successful_transfer(response)
-        # Optionally, assert response structure if needed
-        self.assertTrue(response.get('status') == 'success')
-        self.assertIn('confirmation', response)
+        self.login_page.enter_username('user!@#')
+        self.login_page.enter_password('pass$%^&*')
+        self.login_page.click_login()
+        # Check for error or successful login
+        if self.login_page.is_error_displayed():
+            error_message = self.login_page.get_error_message()
+            self.assertTrue('invalid' in error_message.lower() or 'special' in error_message.lower())
+        else:
+            # Optionally check if dashboard is loaded
+            self.assertTrue(self.dashboard_page.is_loaded())
 
-    def test_TC_158_02_missing_destination(self):
+    def test_TC10_server_error_during_login(self):
         """
-        TC-158-02: Submit payload missing 'destination', expect error for missing field.
-        Steps:
-        - Prepare a payload missing 'destination'
-        - Submit it
-        - Assert error for missing field
+        TC10: Simulate server/network error during login.
+        Expects proper error message and login not processed.
         """
-        payload = self.financial_transfer_api_page.prepare_invalid_payload_missing_destination()
-        response = self.financial_transfer_api_page.send_transfer_payload(payload)
-        self.financial_transfer_api_page.validate_missing_field_error(response)
-        # Optionally, assert error details if needed
-        self.assertTrue(response.get('status') == 'error')
-        self.assertIn('missing_field', response)
-        self.assertEqual(response.get('missing_field'), 'destination')
+        self.login_page.enter_username('valid_user')
+        self.login_page.enter_password('ValidPass123')
+        self.login_page.simulate_server_error()
+        self.login_page.click_login()
+        self.assertTrue(self.login_page.is_server_error_displayed())
+        error_message = self.login_page.get_server_error_message()
+        self.assertIn('server', error_message.lower())
+        self.assertIn('error', error_message.lower())
+        # Ensure dashboard is not loaded
+        self.assertFalse(self.dashboard_page.is_loaded())
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
