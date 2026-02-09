@@ -1,49 +1,75 @@
-# Pages/RuleConfigurationPage.py
-
+# RuleConfigurationPage.py
+"""
+PageClass for Rule Configuration Page
+Covers: TC_SCRUM158_05 (invalid trigger), TC_SCRUM158_06 (missing condition parameter)
+Ensures schema validation and error handling for rules API.
+"""
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 class RuleConfigurationPage:
     """
-    PageClass for Rule Configuration Page.
-    Handles rule creation, schema validation, and simulation based on test cases TC_SCRUM158_01 and TC_SCRUM158_02.
-    Uses locators from Locators.json.
+    Page Object Model for Rule Configuration Page.
+    Covers negative scenarios:
+    - TC_SCRUM158_05: Invalid trigger value in rule schema.
+    - TC_SCRUM158_06: Missing required parameters in condition.
     """
 
-    def __init__(self, driver):
+    # Locators from Locators.json
+    JSON_SCHEMA_EDITOR = (By.CSS_SELECTOR, ".monaco-editor")
+    VALIDATE_SCHEMA_BTN = (By.ID, "btn-verify-json")
+    SCHEMA_ERROR_MESSAGE = (By.CSS_SELECTOR, "[data-testid='error-feedback-text']")
+
+    def __init__(self, driver: WebDriver):
+        """
+        Initializes the RuleConfigurationPage with a WebDriver instance.
+        :param driver: Selenium WebDriver instance
+        """
         self.driver = driver
         self.wait = WebDriverWait(driver, 10)
-        # Example locators loaded from Locators.json
-        self.locators = {
-            "create_rule_button": (By.XPATH, "//button[@id='createRule']"),
-            "rule_name_input": (By.XPATH, "//input[@id='ruleName']"),
-            "schema_tab": (By.XPATH, "//a[@id='schemaTab']"),
-            "schema_validation_button": (By.XPATH, "//button[@id='validateSchema']"),
-            "simulate_button": (By.XPATH, "//button[@id='simulateRule']"),
-            "simulation_result": (By.XPATH, "//div[@id='simulationResult']"),
-            # Add other locators as needed from Locators.json
-        }
 
-    def click_create_rule(self):
-        self.wait.until(EC.element_to_be_clickable(self.locators["create_rule_button"])).click()
+    def enter_json_schema(self, schema: str):
+        """
+        Enters the JSON schema in the schema editor.
+        :param schema: JSON string
+        """
+        editor = self.wait.until(EC.visibility_of_element_located(self.JSON_SCHEMA_EDITOR))
+        editor.clear()
+        editor.send_keys(schema)
 
-    def enter_rule_name(self, rule_name):
-        rule_name_input = self.wait.until(EC.visibility_of_element_located(self.locators["rule_name_input"]))
-        rule_name_input.clear()
-        rule_name_input.send_keys(rule_name)
+    def click_validate_schema(self):
+        """
+        Clicks the validate schema button.
+        """
+        validate_btn = self.wait.until(EC.element_to_be_clickable(self.VALIDATE_SCHEMA_BTN))
+        validate_btn.click()
 
-    def open_schema_tab(self):
-        self.wait.until(EC.element_to_be_clickable(self.locators["schema_tab"])).click()
+    def get_schema_error_message(self) -> str:
+        """
+        Returns the error message displayed for invalid schema.
+        :return: Error message text
+        """
+        error_elem = self.wait.until(EC.visibility_of_element_located(self.SCHEMA_ERROR_MESSAGE))
+        return error_elem.text
 
-    def validate_schema(self):
-        self.wait.until(EC.element_to_be_clickable(self.locators["schema_validation_button"])).click()
+    def validate_invalid_trigger(self):
+        """
+        Test case: TC_SCRUM158_05
+        Prepare a rule schema with an invalid trigger value and validate error handling.
+        """
+        invalid_schema = '{"trigger": "unknown_trigger", "conditions": [{"type": "amount_above", "amount": 100}], "actions": [{"type": "transfer", "amount": 50}]}'
+        self.enter_json_schema(invalid_schema)
+        self.click_validate_schema()
+        return self.get_schema_error_message().strip()
 
-    def simulate_rule(self):
-        self.wait.until(EC.element_to_be_clickable(self.locators["simulate_button"])).click()
-
-    def get_simulation_result(self):
-        result_elem = self.wait.until(EC.visibility_of_element_located(self.locators["simulation_result"]))
-        return result_elem.text
-
-    # Add more methods as required by the test cases and Locators.json
+    def validate_missing_condition_parameter(self):
+        """
+        Test case: TC_SCRUM158_06
+        Prepare a rule schema with a condition missing required parameters and validate error handling.
+        """
+        invalid_schema = '{"trigger": "after_deposit", "conditions": [{"type": "amount_above"}], "actions": [{"type": "transfer", "amount": 50}]}'
+        self.enter_json_schema(invalid_schema)
+        self.click_validate_schema()
+        return self.get_schema_error_message().strip()
