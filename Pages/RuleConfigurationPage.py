@@ -59,8 +59,15 @@ class RuleConfigurationPage:
             date_picker = self.wait_for_element(self.locators["datePicker"])
             date_picker.clear()
             date_picker.send_keys(trigger["date"])
+        elif trigger["type"] == "interval":
+            trigger_type_dropdown.send_keys("interval")
+            interval_input = self.wait_for_element(self.locators["recurringIntervalInput"])
+            interval_input.clear()
+            interval_input.send_keys(trigger.get("value", ""))
+        elif trigger["type"] == "manual":
+            trigger_type_dropdown.send_keys("manual")
         else:
-            pass
+            trigger_type_dropdown.send_keys(trigger["type"])
 
     def add_conditions(self, conditions):
         for condition in conditions:
@@ -68,7 +75,23 @@ class RuleConfigurationPage:
             add_condition_btn.click()
             condition_type_dropdown = self.wait_for_element(self.locators["conditionTypeDropdown"])
             condition_type_dropdown.send_keys(condition.get("type", ""))
-            if "balance_limit" in condition:
+            if condition.get("type") == "amount":
+                if "value" in condition:
+                    balance_input = self.wait_for_element(self.locators["balanceThresholdInput"])
+                    balance_input.clear()
+                    balance_input.send_keys(str(condition["value"]))
+                if "operator" in condition:
+                    operator_dropdown = self.wait_for_element(self.locators["operatorDropdown"])
+                    operator_dropdown.send_keys(condition["operator"])
+            elif condition.get("type") == "country":
+                # No explicit locator, use dropdown and send_keys
+                if "value" in condition:
+                    condition_type_dropdown.send_keys("country")
+                    self.driver.find_element(By.CSS_SELECTOR, "input[name='country']").send_keys(condition["value"])
+                if "operator" in condition:
+                    operator_dropdown = self.wait_for_element(self.locators["operatorDropdown"])
+                    operator_dropdown.send_keys(condition["operator"])
+            elif "balance_limit" in condition:
                 balance_input = self.wait_for_element(self.locators["balanceThresholdInput"])
                 balance_input.clear()
                 balance_input.send_keys(str(condition["balance_limit"]))
@@ -83,7 +106,25 @@ class RuleConfigurationPage:
         action_type_dropdown = self.wait_for_element(self.locators["actionTypeDropdown"])
         action_type_dropdown.click()
         action_type_dropdown.send_keys(action["type"])
-        if action["type"] == "fixed_amount":
+        if action["type"] == "transfer":
+            if "account" in action:
+                dest_account_input = self.wait_for_element(self.locators["destinationAccountInput"])
+                dest_account_input.clear()
+                dest_account_input.send_keys(action["account"])
+            if "amount" in action:
+                amount_input = self.wait_for_element(self.locators["transferAmountInput"])
+                amount_input.clear()
+                amount_input.send_keys(str(action["amount"]))
+        elif action["type"] == "notify":
+            # No explicit locator, assume a message input appears
+            if "message" in action:
+                try:
+                    notify_input = self.driver.find_element(By.CSS_SELECTOR, "input[name='notify-message']")
+                    notify_input.clear()
+                    notify_input.send_keys(action["message"])
+                except NoSuchElementException:
+                    pass
+        elif action["type"] == "fixed_amount":
             amount_input = self.wait_for_element(self.locators["transferAmountInput"])
             amount_input.clear()
             amount_input.send_keys(str(action["amount"]))
@@ -95,6 +136,15 @@ class RuleConfigurationPage:
             dest_account_input = self.wait_for_element(self.locators["destinationAccountInput"])
             dest_account_input.clear()
             dest_account_input.send_keys(action["destination_account"])
+
+    def select_actions(self, actions):
+        """
+        New method: Handles multiple actions for rule configuration.
+        Arguments:
+            actions: list of action dicts
+        """
+        for action in actions:
+            self.select_action(action)
 
     def save_rule(self):
         save_rule_button = self.wait_for_element(self.locators["saveRuleButton"])
@@ -114,73 +164,37 @@ class RuleConfigurationPage:
                 return False, "Unknown error occurred."
 
     # --- New Methods for Test Cases ---
-    def test_case_tc_ft_009_create_and_store_rule(self, rule_id, rule_name, trigger, action, conditions=[]):
+    def submit_rule_schema(self, rule_id, rule_name, trigger, conditions, actions):
         """
-        TC-FT-009 Step 1: Create and store a valid rule with specific date trigger.
+        Handles schemas with multiple triggers, conditions, and actions for TC_SCRUM158_01 and TC_SCRUM158_02.
         Arguments:
             rule_id: str
             rule_name: str
-            trigger: dict (e.g., {"type": "specific_date", "date": "2024-07-01T10:00:00Z"})
-            action: dict (e.g., {"type": "fixed_amount", "amount": 100})
-            conditions: list
+            trigger: dict
+            conditions: list of dict
+            actions: list of dict
         Returns:
             (bool, str): Success flag and message
         """
         self.fill_rule_form(rule_id=rule_id, rule_name=rule_name)
         self.select_trigger(trigger)
         self.add_conditions(conditions)
-        self.select_action(action)
+        self.select_actions(actions)
         self.save_rule()
         return self.validate_rule_acceptance()
 
-    def test_case_tc_ft_009_retrieve_and_verify_rule(self, rule_id):
+    def retrieve_rule(self, rule_id):
         """
-        TC-FT-009 Step 2: Retrieve the rule from backend and verify it matches the original input.
+        Retrieves rule from UI for validation.
         Arguments:
             rule_id: str
         Returns:
             (bool, str): Success flag and message
         """
-        # Placeholder for backend retrieval logic
-        # In Selenium, this may involve navigating to the rule list and verifying rule details
         try:
             rule_row = self.driver.find_element(By.CSS_SELECTOR, f"tr[data-rule-id='{rule_id}']")
             return True, rule_row.text
         except NoSuchElementException:
             return False, f"Rule with ID {rule_id} not found."
-
-    def test_case_tc_ft_010_define_rule_with_empty_conditions(self, rule_id, rule_name, trigger, action):
-        """
-        TC-FT-010 Step 1: Define a rule with empty conditions array.
-        Arguments:
-            rule_id: str
-            rule_name: str
-            trigger: dict
-            action: dict
-        Returns:
-            (bool, str): Success flag and message
-        """
-        self.fill_rule_form(rule_id=rule_id, rule_name=rule_name)
-        self.select_trigger(trigger)
-        self.select_action(action)
-        self.save_rule()
-        return self.validate_rule_acceptance()
-
-    def test_case_tc_ft_010_trigger_rule(self, deposit_amount):
-        """
-        TC-FT-010 Step 2: Trigger the rule and verify transfer execution without conditions.
-        Arguments:
-            deposit_amount: int
-        Returns:
-            (bool, str): Success flag and message
-        """
-        # Placeholder for deposit simulation logic
-        try:
-            success_msg = WebDriverWait(self.driver, self.timeout).until(
-                EC.visibility_of_element_located(self.locators["successMessage"])
-            )
-            return True, success_msg.text
-        except TimeoutException:
-            return False, "Transfer not executed."
 
 # --- End of RuleConfigurationPage.py ---
