@@ -183,3 +183,38 @@ class TestRuleConfiguration:
         await self.rule_config_page.enter_rule_name('Max Conditions Actions Storage')
         result = self.rule_config_page.verify_max_conditions_actions_storage(schema_text)
         assert result, 'Expected success message for storing maximum allowed conditions/actions.'
+
+    # TC_SCRUM158_07: Prepare a schema with only required fields (one trigger, one condition, one action). Verify rule creation.
+    async def test_TC_SCRUM158_07(self):
+        rule_id = 'TC_SCRUM158_07'
+        rule_name = 'Minimal Required Rule'
+        schema_text = '{"trigger":{"type":"manual"},"conditions":[{"type":"amount","operator":"==","value":1}],"actions":[{"type":"transfer","account":"G","amount":1}]}'
+        await self.rule_config_page.enter_rule_id(rule_id)
+        await self.rule_config_page.enter_rule_name(rule_name)
+        await self.rule_config_page.enter_json_schema(schema_text)
+        await self.rule_config_page.click_validate_schema()
+        success_msg = await self.rule_config_page.get_success_message()
+        error_msg = await self.rule_config_page.get_schema_error_message()
+        await self.rule_config_page.click_save_rule()
+        assert 'Rule created successfully' in success_msg or 'Rule is accepted and created.' in success_msg, f'Expected rule creation success, got: {success_msg}'
+        assert error_msg == '' or error_msg is None, f'Expected no error, got: {error_msg}'
+
+    # TC_SCRUM158_08: Prepare a schema with a large metadata field (10,000 characters). Verify rule acceptance and performance.
+    async def test_TC_SCRUM158_08(self):
+        rule_id = 'TC_SCRUM158_08'
+        rule_name = 'Large Metadata Rule'
+        large_metadata = 'x' * 10000
+        schema_text = '{"trigger":{"type":"manual"},"metadata":"' + large_metadata + '"}'
+        await self.rule_config_page.enter_rule_id(rule_id)
+        await self.rule_config_page.enter_rule_name(rule_name)
+        await self.rule_config_page.enter_json_schema(schema_text)
+        await self.rule_config_page.click_validate_schema()
+        success_msg = await self.rule_config_page.get_success_message()
+        error_msg = await self.rule_config_page.get_schema_error_message()
+        import time
+        start = time.time()
+        await self.rule_config_page.click_save_rule()
+        elapsed = time.time() - start
+        assert 'Rule created successfully' in success_msg or 'Rule is accepted if within limits' in success_msg, f'Expected rule acceptance, got: {success_msg}'
+        assert error_msg == '' or error_msg is None, f'Expected no error, got: {error_msg}'
+        assert elapsed < 5, f'Performance not acceptable: {elapsed} seconds'
