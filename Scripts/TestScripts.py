@@ -17,8 +17,8 @@ class TestLoginFunctionality:
         """
         TC_Login_03: Navigate to login page, leave email empty, enter valid password, click login, validate 'Email required' error.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
-        valid_password = "ValidPassword123"      # Replace with actual valid password
+        login_url = "http://your-login-url.com"
+        valid_password = "ValidPassword123"
         expected_error = "Email required"
         result = self.login_page.validate_login_missing_email(login_url, valid_password, expected_error)
         assert result, f"Expected error message '{expected_error}' not shown for missing email."
@@ -27,8 +27,8 @@ class TestLoginFunctionality:
         """
         TC_Login_04: Navigate to login page, enter valid email, leave password empty, click login, validate 'Password required' error.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
-        valid_email = "user@example.com"         # Replace with actual valid email
+        login_url = "http://your-login-url.com"
+        valid_email = "user@example.com"
         expected_error = "Password required"
         result = self.login_page.validate_login_missing_password(login_url, valid_email, expected_error)
         assert result, f"Expected error message '{expected_error}' not shown for missing password."
@@ -37,7 +37,7 @@ class TestLoginFunctionality:
         """
         TC_Login_01: Navigate to login page, enter valid email and password, click login, validate login success.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        login_url = "http://your-login-url.com"
         valid_email = "user@example.com"
         valid_password = "ValidPassword123"
         result = self.login_page.validate_successful_login(login_url, valid_email, valid_password)
@@ -47,7 +47,7 @@ class TestLoginFunctionality:
         """
         TC_Login_02: Navigate to login page, enter invalid email and password, click login, validate error message 'Invalid credentials'.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        login_url = "http://your-login-url.com"
         invalid_email = "wronguser@example.com"
         invalid_password = "WrongPassword"
         expected_error = "Invalid credentials"
@@ -58,7 +58,7 @@ class TestLoginFunctionality:
         """
         TC_Login_08: Navigate to login page, click 'Forgot Password', validate redirection to password recovery page.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        login_url = "http://your-login-url.com"
         result = self.login_page.validate_forgot_password_flow(login_url)
         assert result, "User was not redirected to password recovery page after clicking 'Forgot Password'."
 
@@ -66,8 +66,8 @@ class TestLoginFunctionality:
         """
         TC_Login_09: Navigate to login page, enter maximum allowed input for email/username (255 chars) and valid password, click login, validate acceptance and login success.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
-        max_length_email = "a" * 247 + "@ex.com"  # 255 chars total
+        login_url = "http://your-login-url.com"
+        max_length_email = "a" * 247 + "@ex.com"
         valid_password = "ValidPassword123"
         result = self.login_page.validate_maximum_input_length_login(login_url, max_length_email, valid_password)
         assert result, "Login was not successful or field did not accept maximum input length."
@@ -76,18 +76,19 @@ class TestLoginFunctionality:
         """
         TC_LOGIN_005: Enter email/username and password containing special characters, validate fields accept input and login outcome.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        login_url = "http://your-login-url.com"
         special_email = "special_user!@#$/example.com"
         special_password = "P@$$w0rd!#"
-        result = self.login_page.validate_special_characters_login(login_url, special_email, special_password)
+        expected_valid = True  # Set to True if credentials should be valid, False otherwise
+        result = self.login_page.validate_special_char_login(login_url, special_email, special_password, expected_valid)
         assert result, "Special characters were not accepted or login failed."
 
     async def test_TC_LOGIN_006_remember_me_session_persistence(self):
         """
         TC_LOGIN_006: Enter valid credentials, select 'Remember Me', click login, validate checkbox is checked and session persists after browser restart.
         """
-        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        login_url = "http://your-login-url.com"
         valid_email = "user@example.com"
         valid_password = "ValidPassword123"
-        result = self.login_page.validate_remember_me_login(login_url, valid_email, valid_password)
+        result = self.login_page.validate_remember_me_persistence(login_url, valid_email, valid_password)
         assert result, "Remember Me checkbox was not checked or session did not persist."
