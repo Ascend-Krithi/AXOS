@@ -180,3 +180,35 @@ class TestTransferAPI(unittest.TestCase):
         self.assertFalse(result["success"], "Expected authentication error for invalid token")
         self.assertTrue(result["auth_error_detected"], "Expected 'Invalid authentication token' error")
         self.assertIn("Invalid authentication token", result["error_message"], f"Expected error message, got {result['error_message']}")
+
+    def test_TC_158_09_valid_transfer_and_log_verification(self):
+        """
+        TestCase TC-158-09: Submit a valid transfer payload and verify backend log entry.
+        """
+        payload = {
+            "amount": 200.00,
+            "currency": "USD",
+            "source": "ACC123",
+            "destination": "ACC456",
+            "timestamp": "2024-06-01T10:00:00Z"
+        }
+        result = self.transfer_api.submit_valid_transfer_and_verify_log(payload)
+        self.assertTrue(result["transfer_result"]["success"], f"Expected transfer success, got {result['transfer_result']['error_message']}")
+        self.assertTrue(result["log_verified"], f"Expected log verification, got {result['error']}")
+        self.assertDictEqual(result["log_details"], payload, f"Log details do not match transfer payload: {result['log_details']} vs {payload}")
+
+    def test_TC_158_10_unsupported_currency_error(self):
+        """
+        TestCase TC-158-10: Submit a payload with unsupported currency and verify API returns 'Unsupported currency' error.
+        """
+        payload = {
+            "amount": 100.00,
+            "currency": "XYZ",
+            "source": "ACC123",
+            "destination": "ACC456",
+            "timestamp": "2024-06-01T10:00:00Z"
+        }
+        result = self.transfer_api.submit_unsupported_currency_and_verify(payload)
+        self.assertFalse(result["response"]["success"], "Expected API to reject unsupported currency")
+        self.assertTrue(result["error_verified"], f"Expected 'Unsupported currency' error, got {result['response']['error_message']}")
+        self.assertEqual(result["response"]["error_message"], "Unsupported currency", f"Expected error message 'Unsupported currency', got {result['response']['error_message']}")
