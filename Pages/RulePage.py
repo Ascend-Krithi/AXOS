@@ -123,3 +123,51 @@ class RulePage:
         return WebDriverWait(self.driver, timeout).until(
             EC.visibility_of_element_located((by, value))
         )
+
+    def store_rule_in_postgresql(self, rule_data):
+        """
+        Simulates storing a rule in PostgreSQL via UI.
+        Args:
+            rule_data (dict): Rule data to store.
+        Returns:
+            str: Submission result text.
+        """
+        trigger = rule_data.get('trigger', {})
+        action = rule_data.get('action', {})
+        conditions = rule_data.get('conditions', [])
+
+        if trigger.get('type'):
+            self.driver.find_element(By.ID, 'trigger-type').send_keys(trigger['type'])
+        if trigger.get('date'):
+            self.driver.find_element(By.ID, 'trigger-date').send_keys(trigger['date'])
+        if action.get('type'):
+            self.driver.find_element(By.ID, 'action-type').send_keys(action['type'])
+        if action.get('amount'):
+            self.driver.find_element(By.ID, 'action-amount').send_keys(str(action['amount']))
+        for cond in conditions:
+            if cond['type'] == 'balance_threshold':
+                self.driver.find_element(By.ID, 'balance-threshold').send_keys(str(cond['value']))
+            if cond['type'] == 'transaction_source':
+                self.driver.find_element(By.ID, 'transaction-source').send_keys(cond['value'])
+        self.driver.find_element(By.ID, 'submit-rule').click()
+        return self.driver.find_element(By.ID, 'rule-result').text
+
+    def retrieve_rule_from_backend(self, rule_id):
+        """
+        Simulates retrieving a rule from backend via UI.
+        Args:
+            rule_id (str): Rule identifier.
+        Returns:
+            dict: Rule details as parsed from UI.
+        """
+        self.driver.find_element(By.ID, 'retrieve-rule-btn').click()
+        self.driver.find_element(By.ID, 'rule-id-input').clear()
+        self.driver.find_element(By.ID, 'rule-id-input').send_keys(rule_id)
+        self.driver.find_element(By.ID, 'retrieve-rule-submit').click()
+        import json
+        rule_text = self._wait_for_element(By.ID, 'rule-details', timeout=20).text
+        try:
+            rule_details = json.loads(rule_text)
+        except Exception:
+            rule_details = {'raw': rule_text}
+        return rule_details
