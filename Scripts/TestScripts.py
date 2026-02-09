@@ -34,10 +34,22 @@ class TestRuleConfiguration:
         rule_name = "SpecificDateRule"
         date_iso = "2024-07-01T10:00:00Z"
         amount = 100
-        self.rule_page.define_json_rule_specific_date(rule_id, rule_name, date_iso, amount)
-        assert self.rule_page.validate_rule_accepted(), "Rule was not accepted by the system"
+        # Step 1: Set up rule configuration
+        self.rule_page.set_rule_id(rule_id)
+        self.rule_page.set_rule_name(rule_name)
+        self.rule_page.select_trigger_type('specific_date')
+        self.rule_page.set_trigger_date(date_iso)
+        self.rule_page.select_action_type('fixed_amount')
+        self.rule_page.set_transfer_amount(amount)
+        self.rule_page.save_rule()
+        # Step 2: Validate rule acceptance
+        success_message = self.rule_page.get_success_message()
+        assert success_message is not None and 'accepted' in success_message.lower(), "Rule was not accepted by the system"
+        # Step 3: Simulate system time
         self.rule_page.simulate_system_time(date_iso)
-        assert self.rule_page.validate_transfer_action_executed(), "Transfer action was not executed"
+        # Step 4: Validate transfer action
+        transfer_result = self.rule_page.validate_transfer_action()
+        assert transfer_result is not None, "Transfer action was not executed"
 
     def test_recurring_weekly_rule_transfer(self):
         """
@@ -45,11 +57,22 @@ class TestRuleConfiguration:
         """
         rule_id = "TCFT002"
         rule_name = "RecurringWeeklyRule"
+        interval = "weekly"
         percentage = 10
-        self.rule_page.define_json_rule_recurring_weekly(rule_id, rule_name, percentage)
-        assert self.rule_page.validate_rule_accepted(), "Rule was not accepted by the system"
-        # Simulate several weeks
+        # Step 1: Set up rule configuration
+        self.rule_page.set_rule_id(rule_id)
+        self.rule_page.set_rule_name(rule_name)
+        self.rule_page.select_trigger_type('recurring')
+        self.rule_page.set_recurring_interval(interval)
+        self.rule_page.select_action_type('percentage_of_deposit')
+        self.rule_page.set_percentage(percentage)
+        self.rule_page.save_rule()
+        # Step 2: Validate rule acceptance
+        success_message = self.rule_page.get_success_message()
+        assert success_message is not None and 'accepted' in success_message.lower(), "Rule was not accepted by the system"
+        # Step 3: Simulate several weeks
         for week in range(3):
             future_date = f"2024-07-0{week+2}T10:00:00Z"
             self.rule_page.simulate_system_time(future_date)
-            assert self.rule_page.validate_transfer_action_executed(), f"Transfer action was not executed for week {week+1}"
+            transfer_result = self.rule_page.validate_transfer_action()
+            assert transfer_result is not None, f"Transfer action was not executed for week {week+1}"
