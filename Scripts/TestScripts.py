@@ -152,3 +152,32 @@ class TestRuleConfiguration:
         await self.rule_config_page.navigate()
         self.rule_config_page.define_rule_after_deposit_empty_conditions(rule_id, rule_name, amount, schema_str)
         self.rule_config_page.trigger_rule_and_verify_unconditional_execution(deposit_amount)
+
+    # --- TC_SCRUM158_03: Recurring Interval Trigger Rule Creation and Scheduling Verification ---
+    async def test_create_and_verify_recurring_interval_rule(self):
+        """
+        TC_SCRUM158_03: Create a schema with a recurring interval trigger (e.g., weekly), submit, verify scheduling logic
+        """
+        rule_id = "TC_SCRUM158_03"
+        rule_name = "Recurring Interval Rule"
+        interval_value = "weekly"
+        condition_operator = ">="
+        condition_value = 1000
+        action_account = "C"
+        action_amount = 1000
+        await self.rule_config_page.create_recurring_interval_rule(rule_id, rule_name, interval_value, condition_operator, condition_value, action_account, action_amount)
+        assert self.rule_config_page.verify_rule_scheduling(), "Rule scheduling logic verification failed."
+
+    # --- TC_SCRUM158_04: Rule Creation with Missing Trigger and Error Validation ---
+    async def test_submit_rule_without_trigger_and_verify_error(self):
+        """
+        TC_SCRUM158_04: Prepare a schema missing the 'trigger' field, attempt to create rule, verify error handling
+        """
+        rule_id = "TC_SCRUM158_04"
+        rule_name = "Missing Trigger Rule"
+        condition_operator = "<"
+        condition_value = 50
+        action_account = "D"
+        action_amount = 50
+        await self.rule_config_page.submit_rule_without_trigger(rule_id, rule_name, condition_operator, condition_value, action_account, action_amount)
+        assert self.rule_config_page.verify_missing_trigger_error(), "Missing trigger error was not displayed as expected."
