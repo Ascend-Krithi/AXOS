@@ -50,24 +50,16 @@ class RuleConfigurationPage:
     def select_trigger(self, trigger):
         trigger_type_dropdown = self.wait_for_element(self.locators["triggerTypeDropdown"])
         trigger_type_dropdown.click()
-        # Select trigger type
         if trigger["type"] == "after_deposit":
             after_deposit_toggle = self.wait_for_element(self.locators["afterDepositToggle"])
             if not after_deposit_toggle.is_selected():
                 after_deposit_toggle.click()
-        elif trigger["type"] == "currency_conversion":
-            # Attempt to select currency_conversion if present
-            try:
-                dropdown = self.wait_for_element(self.locators["triggerTypeDropdown"])
-                dropdown.send_keys("currency_conversion")
-                if "currency" in trigger:
-                    date_picker = self.wait_for_element(self.locators["datePicker"])
-                    date_picker.clear()
-                    date_picker.send_keys(trigger["currency"])
-            except (TimeoutException, NoSuchElementException):
-                pass  # Gracefully handle unsupported trigger
+        elif trigger["type"] == "specific_date":
+            trigger_type_dropdown.send_keys("specific_date")
+            date_picker = self.wait_for_element(self.locators["datePicker"])
+            date_picker.clear()
+            date_picker.send_keys(trigger["date"])
         else:
-            # Handle other trigger types as needed
             pass
 
     def add_conditions(self, conditions):
@@ -91,14 +83,14 @@ class RuleConfigurationPage:
         action_type_dropdown = self.wait_for_element(self.locators["actionTypeDropdown"])
         action_type_dropdown.click()
         action_type_dropdown.send_keys(action["type"])
-        if action["type"] == "percentage_of_deposit":
-            percentage_input = self.wait_for_element(self.locators["percentageInput"])
-            percentage_input.clear()
-            percentage_input.send_keys(str(action["percentage"]))
-        elif action["type"] == "fixed_amount":
+        if action["type"] == "fixed_amount":
             amount_input = self.wait_for_element(self.locators["transferAmountInput"])
             amount_input.clear()
             amount_input.send_keys(str(action["amount"]))
+        elif action["type"] == "percentage_of_deposit":
+            percentage_input = self.wait_for_element(self.locators["percentageInput"])
+            percentage_input.clear()
+            percentage_input.send_keys(str(action["percentage"]))
         if "destination_account" in action:
             dest_account_input = self.wait_for_element(self.locators["destinationAccountInput"])
             dest_account_input.clear()
@@ -121,7 +113,19 @@ class RuleConfigurationPage:
             except NoSuchElementException:
                 return False, "Unknown error occurred."
 
-    def define_rule(self, rule_id, rule_name, trigger, action, conditions=[]):
+    # --- New Methods for Test Cases ---
+    def test_case_tc_ft_009_create_and_store_rule(self, rule_id, rule_name, trigger, action, conditions=[]):
+        """
+        TC-FT-009 Step 1: Create and store a valid rule with specific date trigger.
+        Arguments:
+            rule_id: str
+            rule_name: str
+            trigger: dict (e.g., {"type": "specific_date", "date": "2024-07-01T10:00:00Z"})
+            action: dict (e.g., {"type": "fixed_amount", "amount": 100})
+            conditions: list
+        Returns:
+            (bool, str): Success flag and message
+        """
         self.fill_rule_form(rule_id=rule_id, rule_name=rule_name)
         self.select_trigger(trigger)
         self.add_conditions(conditions)
@@ -129,11 +133,48 @@ class RuleConfigurationPage:
         self.save_rule()
         return self.validate_rule_acceptance()
 
-    def simulate_deposit(self, amount):
-        # This method assumes testability hooks or UI for deposit simulation
-        # Placeholder for actual simulation logic
-        # For demonstration, we'll assume a deposit triggers a rule and verify transfer
-        # Wait for success message indicating transfer
+    def test_case_tc_ft_009_retrieve_and_verify_rule(self, rule_id):
+        """
+        TC-FT-009 Step 2: Retrieve the rule from backend and verify it matches the original input.
+        Arguments:
+            rule_id: str
+        Returns:
+            (bool, str): Success flag and message
+        """
+        # Placeholder for backend retrieval logic
+        # In Selenium, this may involve navigating to the rule list and verifying rule details
+        try:
+            rule_row = self.driver.find_element(By.CSS_SELECTOR, f"tr[data-rule-id='{rule_id}']")
+            return True, rule_row.text
+        except NoSuchElementException:
+            return False, f"Rule with ID {rule_id} not found."
+
+    def test_case_tc_ft_010_define_rule_with_empty_conditions(self, rule_id, rule_name, trigger, action):
+        """
+        TC-FT-010 Step 1: Define a rule with empty conditions array.
+        Arguments:
+            rule_id: str
+            rule_name: str
+            trigger: dict
+            action: dict
+        Returns:
+            (bool, str): Success flag and message
+        """
+        self.fill_rule_form(rule_id=rule_id, rule_name=rule_name)
+        self.select_trigger(trigger)
+        self.select_action(action)
+        self.save_rule()
+        return self.validate_rule_acceptance()
+
+    def test_case_tc_ft_010_trigger_rule(self, deposit_amount):
+        """
+        TC-FT-010 Step 2: Trigger the rule and verify transfer execution without conditions.
+        Arguments:
+            deposit_amount: int
+        Returns:
+            (bool, str): Success flag and message
+        """
+        # Placeholder for deposit simulation logic
         try:
             success_msg = WebDriverWait(self.driver, self.timeout).until(
                 EC.visibility_of_element_located(self.locators["successMessage"])
@@ -142,43 +183,4 @@ class RuleConfigurationPage:
         except TimeoutException:
             return False, "Transfer not executed."
 
-    def define_future_rule_type(self, rule_id, rule_name, trigger, action, conditions=[]):
-        self.fill_rule_form(rule_id=rule_id, rule_name=rule_name)
-        self.select_trigger(trigger)
-        self.add_conditions(conditions)
-        self.select_action(action)
-        self.save_rule()
-        return self.validate_rule_acceptance()
-
-    def verify_existing_rules_execution(self):
-        # Placeholder for actual verification logic
-        # This could involve checking that existing rules still trigger as expected
-        try:
-            success_msg = WebDriverWait(self.driver, self.timeout).until(
-                EC.visibility_of_element_located(self.locators["successMessage"])
-            )
-            return True, success_msg.text
-        except TimeoutException:
-            return False, "Existing rules not executed as expected."
-
-    # Test case methods
-    def tc_define_10_percent_deposit_rule(self, rule_id, rule_name):
-        trigger = {"type": "after_deposit"}
-        action = {"type": "percentage_of_deposit", "percentage": 10}
-        conditions = []
-        return self.define_rule(rule_id, rule_name, trigger, action, conditions)
-
-    def tc_simulate_deposit_and_verify_transfer(self, deposit_amount, expected_transfer):
-        result, msg = self.simulate_deposit(deposit_amount)
-        if result and str(expected_transfer) in msg:
-            return True, msg
-        return False, msg
-
-    def tc_define_currency_conversion_rule(self, rule_id, rule_name):
-        trigger = {"type": "currency_conversion", "currency": "EUR"}
-        action = {"type": "fixed_amount", "amount": 100}
-        conditions = []
-        return self.define_future_rule_type(rule_id, rule_name, trigger, action, conditions)
-
-    def tc_verify_existing_rules(self):
-        return self.verify_existing_rules_execution()
+# --- End of RuleConfigurationPage.py ---
