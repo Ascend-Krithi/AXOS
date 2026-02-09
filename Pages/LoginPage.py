@@ -5,6 +5,24 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 class LoginPage:
+    """
+    Page Object for Login functionality.
+
+    Methods:
+        enter_username(username): Enter username in the username field.
+        enter_password(password): Enter password in the password field.
+        click_login(): Click the login button.
+        click_remember_me(): Click the 'Remember Me' checkbox.
+        is_remember_me_selected(): Return True if 'Remember Me' is selected.
+        get_error_message(): Return error message if present.
+        login(username, password, remember_me=False): Perform login sequence.
+        validate_session_persistence(): Validate if session persists after login (for 'Remember Me').
+        expire_session_and_validate_redirect(): Simulate session expiration and validate redirect to login page (for TC_Login_07).
+
+    Usage:
+        - Supports TC_LOGIN_001 (basic login and redirect).
+        - Supports TC_Login_07 (session expiration after login without 'Remember Me').
+    """
     def __init__(self, driver: WebDriver):
         self.driver = driver
         self.wait = WebDriverWait(self.driver, 10)
@@ -53,10 +71,27 @@ class LoginPage:
         self.click_login()
 
     def validate_session_persistence(self):
-        # Assumes session persistence is checked by accessing the login page after login
+        """
+        Validate session persistence by re-accessing the current URL.
+        If 'Remember Me' was checked, the user should remain logged in.
+        Returns True if DashboardPage is displayed.
+        """
         self.driver.get(self.driver.current_url)
-        # If 'Remember Me' was checked, user should remain logged in (DashboardPage should be visible)
-        # This method can be expanded based on application logic
         from Pages.DashboardPage import DashboardPage
         dashboard = DashboardPage(self.driver)
         return dashboard.is_dashboard_displayed()
+
+    def expire_session_and_validate_redirect(self):
+        """
+        Simulate session expiration by clearing cookies and local storage.
+        Then reload the page and check if redirected to login page.
+        Returns True if login page is displayed after session expiration.
+        """
+        self.driver.delete_all_cookies()
+        self.driver.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
+        self.driver.refresh()
+        try:
+            username_field = self.wait.until(EC.visibility_of_element_located(self.username_locator))
+            return username_field.is_displayed()
+        except:
+            return False
