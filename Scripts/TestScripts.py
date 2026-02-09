@@ -85,3 +85,46 @@ class TestRuleConfigurationNegativeCases:
         await self.rule_page.submit_rule()
         # Business rule: Accept or error, both are valid as per acceptance criteria
         return valid, message
+
+    async def test_tc_scrum158_09(self):
+        """
+        TC_SCRUM158_09: Prepare rule schema with minimum required fields, validate, submit, and verify creation.
+        """
+        await self.rule_page.navigate_to_rule_configuration()
+        schema = {
+            "trigger": "balance_above",
+            "conditions": [
+                {"type": "amount_above", "value": 1000}
+            ],
+            "actions": [
+                {"type": "transfer", "amount": 100}
+            ]
+        }
+        await self.rule_page.fill_rule_schema(schema)
+        valid, message = await self.rule_page.validate_schema()
+        assert valid, f"Schema validation failed: {message}"
+        await self.rule_page.submit_rule()
+        rule_details = await self.rule_page.retrieve_rule(schema.get("trigger", ""))
+        assert rule_details, "Rule creation failed or not found."
+
+    async def test_tc_scrum158_10(self):
+        """
+        TC_SCRUM158_10: Prepare rule schema with unsupported trigger type, validate, submit, and check API response.
+        """
+        await self.rule_page.navigate_to_rule_configuration()
+        schema = {
+            "trigger": "future_trigger",
+            "conditions": [
+                {"type": "amount_above", "value": 1000}
+            ],
+            "actions": [
+                {"type": "transfer", "amount": 100}
+            ]
+        }
+        await self.rule_page.fill_rule_schema(schema)
+        valid, message = await self.rule_page.validate_schema()
+        if not valid:
+            assert "unsupported" in message.lower() or "invalid" in message.lower(), f"Unexpected error message: {message}"
+        await self.rule_page.submit_rule()
+        error_message = await self.rule_page.get_error_message()
+        assert error_message is not None, "Expected API error for unsupported trigger type"
