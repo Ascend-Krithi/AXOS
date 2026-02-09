@@ -1,4 +1,3 @@
-
 import unittest
 from RuleConfigurationPage import RuleConfigurationPage
 
@@ -125,6 +124,26 @@ class TestRuleConfiguration(unittest.TestCase):
         success, message = self.page.submit_rule_missing_trigger(rule_id, rule_name, conditions, actions)
         self.assertFalse(success, f"Rule should not be accepted: {message}")
         self.assertIn('missing', message.lower())
+
+    def test_TC_SCRUM158_05(self):
+        """TC_SCRUM158_05: Prepare a schema with unsupported trigger type and verify rejection."""
+        driver = self.page.driver
+        page = RuleConfigurationPage(driver)
+        trigger_type = 'unsupported_type'
+        conditions = [["amount", "<", "10"]]
+        actions = [["transfer", "E", "10"]]
+        page.configure_schema(trigger_type, conditions, actions)
+        self.assertTrue(page.is_schema_rejected_due_to_trigger(), "Schema with unsupported trigger type was not rejected as expected.")
+
+    def test_TC_SCRUM158_06(self):
+        """TC_SCRUM158_06: Prepare a schema with maximum allowed (10) conditions and actions and verify acceptance."""
+        driver = self.page.driver
+        page = RuleConfigurationPage(driver)
+        trigger_type = 'manual'
+        conditions = [["amount", "==", str(i)] for i in range(1, 11)]
+        actions = [["transfer", f"F{i}", str(i)] for i in range(1, 11)]
+        page.configure_schema(trigger_type, conditions, actions)
+        self.assertTrue(page.is_schema_accepted(), "Schema with maximum allowed conditions/actions was not accepted as expected.")
 
 if __name__ == "__main__":
     unittest.main()
