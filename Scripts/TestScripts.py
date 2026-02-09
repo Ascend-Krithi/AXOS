@@ -68,29 +68,25 @@ class LoginTests(unittest.TestCase):
         self.assertFalse(results['lower']['success'], 'Lower case credentials should fail')
         self.assertFalse(results['mixed']['success'], 'Mixed case credentials should fail')
 
-    def test_TC_LOGIN_003_empty_email(self):
+    def test_TC_LOGIN_003_empty_email_required(self):
         """
-        Test Case TC_LOGIN_003:
-        - Navigate to login page
-        - Leave email/username field empty, enter valid password
-        - Click login
-        - Expect error message 'Email/Username required'
+        TC_LOGIN_003: Attempt login with empty email and valid password. Assert error message and remain on login page.
         """
         self.login_page.navigate_to_login()
         error_message = self.login_page.login_with_empty_email('ValidPass123')
-        self.assertEqual(error_message, 'Email/Username required', "Should display 'Email/Username required' error message")
+        self.assertEqual(error_message, 'Email/Username required', 'Incorrect error message for empty email')
+        # Optionally, verify user remains on login page, e.g., by checking a login page indicator
+        self.assertTrue(not self.login_page.is_dashboard_redirected(), 'User should remain on login page after empty email attempt')
 
-    def test_TC_LOGIN_004_empty_password(self):
+    def test_TC_LOGIN_004_empty_password_required(self):
         """
-        Test Case TC_LOGIN_004:
-        - Navigate to login page
-        - Enter valid email/username, leave password field empty
-        - Click login
-        - Expect error message 'Password required'
+        TC_LOGIN_004: Attempt login with valid email and empty password. Assert error message and remain on login page.
         """
         self.login_page.navigate_to_login()
         error_message = self.login_page.login_with_empty_password('user@example.com')
-        self.assertEqual(error_message, 'Password required', "Should display 'Password required' error message")
+        self.assertEqual(error_message, 'Password required', 'Incorrect error message for empty password')
+        # Optionally, verify user remains on login page, e.g., by checking a login page indicator
+        self.assertTrue(not self.login_page.is_dashboard_redirected(), 'User should remain on login page after empty password attempt')
 
 if __name__ == '__main__':
     unittest.main()
