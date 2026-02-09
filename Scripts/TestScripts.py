@@ -1,4 +1,3 @@
-# Scripts/TestScripts.py
 import pytest
 from Pages.RuleConfigurationPage import RuleConfigurationPage
 
@@ -80,3 +79,17 @@ def test_TC_SCRUM158_08(driver):
     success, performance = page.create_rule_with_large_metadata(rule_id, rule_name, trigger_type, schema_str)
     assert success is not None and ("accepted" in success.lower() or "created" in success.lower()), f"Expected rule to be accepted if within limits, got: {success}"
     assert performance < 10, f"Performance issue: Rule creation took {performance} seconds, expected less than 10 seconds."
+
+@pytest.mark.tc_scrum158_09
+def test_TC_SCRUM158_09(driver):
+    '''Test Case TC_SCRUM158_09: Submit schema with malicious script in metadata, verify rule is rejected and error returned, no injection occurs.'''
+    schema = {"trigger": {"type": "manual"}, "conditions": [{"type": "amount", "operator": "==", "value": 1}], "actions": [{"type": "transfer", "account": "I", "amount": 1}], "metadata": "<script>alert('hack')</script>"}
+    page = RuleConfigurationPage(driver)
+    page.submit_schema_with_malicious_script_and_verify_rejection(schema)
+
+@pytest.mark.tc_scrum158_10
+def test_TC_SCRUM158_10(driver):
+    '''Test Case TC_SCRUM158_10: Submit schema with unsupported trigger type, verify rule is rejected or handled gracefully, extensibility error/warning returned.'''
+    schema = {"trigger": {"type": "future_type"}, "conditions": [{"type": "amount", "operator": "==", "value": 1}], "actions": [{"type": "transfer", "account": "J", "amount": 1}]}
+    page = RuleConfigurationPage(driver)
+    page.submit_schema_with_unsupported_trigger_and_verify_extensibility_error(schema)
