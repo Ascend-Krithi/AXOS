@@ -1,15 +1,21 @@
-{Import necessary modules}
 
-class TestLoginFunctionality:
-    def __init__(self, page):
-        self.page = page
-        self.login_page = LoginPage(page)
+import unittest
+from RuleConfigurationPage import RuleConfigurationPage
 
-    async def test_empty_fields_validation(self):
-        await self.login_page.navigate()
-        await self.login_page.submit_login('', '')
-        assert await self.login_page.get_error_message() == 'Mandatory fields are required'
+class TestRuleConfiguration(unittest.TestCase):
+    # Existing test methods...
 
-    async def test_remember_me_functionality(self):
-        await self.login_page.navigate()
-        await self.login_page.fill_email('
+    def test_TC_SCRUM158_05_invalid_trigger(self):
+        """TC_SCRUM158_05: Verify error handling for invalid trigger input."""
+        page = RuleConfigurationPage()
+        result = page.run_invalid_trigger_test()
+        self.assertTrue(result['error_detected'], f"Expected error for invalid trigger, got: {result}")
+
+    def test_TC_SCRUM158_06_missing_condition_param(self):
+        """TC_SCRUM158_06: Verify error handling when condition parameter is missing."""
+        page = RuleConfigurationPage()
+        result = page.run_missing_condition_param_test()
+        self.assertTrue(result['error_detected'], f"Expected error for missing condition parameter, got: {result}")
+
+if __name__ == '__main__':
+    unittest.main()
