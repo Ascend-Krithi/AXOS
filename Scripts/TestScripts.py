@@ -136,3 +136,45 @@ class TestRuleCreation:
             raise Exception("Unsupported action type")
         except Exception as e:
             assert "unsupported action type" in str(e).lower(), f"Expected error for unsupported action type, got: {e}"
+
+# --- Appended Test Cases ---
+
+class TestRuleManagerPage:
+    def __init__(self, driver):
+        self.driver = driver
+        self.rule_manager_page = RuleManagerPage(driver)
+        self.schedule_simulator_page = ScheduleSimulatorPage(driver)
+
+    def test_percentage_of_deposit_rule(self):
+        """
+        TC-FT-005 Step 1: Define a rule for 10% of deposit action. Step 2: Simulate deposit of 500 units. Expect: Rule is accepted and transfer of 50 units is executed.
+        """
+        rule_json = '{"trigger": {"type": "after_deposit"}, "action": {"type": "percentage_of_deposit", "percentage": 10}, "conditions": []}'
+        self.rule_manager_page.enter_rule_json(rule_json)
+        self.rule_manager_page.submit_rule()
+        assert self.rule_manager_page.verify_rule_accepted(), "Rule was not accepted"
+        # Simulate deposit of 500 units and verify transfer
+        deposit_amount = 500
+        expected_transfer = 50
+        result = self.schedule_simulator_page.simulate_deposit_and_verify_transfer(deposit_amount, expected_transfer)
+        assert result, f"Expected transfer of {expected_transfer} units not executed"
+
+    def test_currency_conversion_rule_and_existing_rules(self):
+        """
+        TC-FT-006 Step 1: Define a rule with trigger type 'currency_conversion', currency 'EUR', action 'fixed_amount', amount 100. Step 2: Verify existing rules continue to execute as before. Expect: System accepts or gracefully rejects with a clear message, and existing rules function as expected.
+        """
+        rule_json = '{"trigger": {"type": "currency_conversion", "currency": "EUR"}, "action": {"type": "fixed_amount", "amount": 100}, "conditions": []}'
+        self.rule_manager_page.enter_rule_json(rule_json)
+        self.rule_manager_page.submit_rule()
+        # Check for acceptance or graceful rejection
+        try:
+            accepted = self.rule_manager_page.verify_rule_accepted()
+        except Exception:
+            accepted = False
+        try:
+            rejected = self.rule_manager_page.verify_rule_rejected()
+        except Exception:
+            rejected = False
+        assert accepted or rejected, "Rule was neither accepted nor gracefully rejected"
+        # Verify existing rules continue to execute as before
+        assert self.rule_manager_page.verify_existing_rules_intact(), "Existing rules not functioning as expected"
