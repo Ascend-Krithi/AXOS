@@ -63,3 +63,33 @@ class TestScripts(unittest.TestCase):
         self.login_page.click_login()
         # Assert user is redirected to dashboard
         self.assertTrue(self.login_page.is_login_successful(), "User should be redirected to dashboard after successful login")
+
+    def test_TC_LOGIN_002_invalid_credentials(self):
+        """
+        TC_LOGIN_002: Navigate to login page, enter invalid email/username and password, click login, assert user remains on login page and error message for invalid credentials is displayed.
+        """
+        invalid_username = "wronguser@example.com"
+        invalid_password = "WrongPassword"
+        # Step 1: Navigate to login page (already handled in setUp)
+        # Step 2: Enter invalid credentials
+        self.login_page.enter_username(invalid_username)
+        self.login_page.enter_password(invalid_password)
+        # Step 3: Click the Login button
+        self.login_page.click_login()
+        # Assert error message for invalid credentials is displayed
+        self.assertTrue(self.login_page.is_error_displayed(), "Error message for invalid credentials should be displayed")
+        # Assert user remains on login page
+        self.assertFalse(self.login_page.is_login_successful(), "User should remain on login page after invalid credentials")
+
+    def test_TC_LOGIN_003_empty_credentials(self):
+        """
+        TC_LOGIN_003: Navigate to login page, leave email/username and password fields empty, click login, assert validation/error message for empty fields is displayed and user remains on login page.
+        """
+        # Step 1: Navigate to login page (already handled in setUp)
+        # Step 2: Leave fields empty
+        # Step 3: Click the Login button
+        result = self.login_page.login_with_empty_fields()
+        # Assert validation/error message for empty fields is displayed
+        self.assertTrue(result, "Validation/error message for empty fields should be displayed")
+        # Assert user remains on login page
+        self.assertFalse(self.login_page.is_login_successful(), "User should remain on login page after empty credentials")
