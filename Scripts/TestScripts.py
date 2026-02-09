@@ -93,3 +93,30 @@ class TestRuleConfiguration:
         conditions_unsupported = []
         self.rule_page.submit_rule_unsupported_action(trigger_unsupported_action, action_unsupported, conditions_unsupported)
         self.rule_page.validate_error_message("unsupported action type")
+
+    def test_define_percentage_of_deposit_rule_and_execute(self):
+        """
+        TC-FT-005: Define a rule for 10% of deposit, simulate deposit of 500 units, validate acceptance, and execution of transfer of 50 units.
+        """
+        rule_data = {
+            "trigger": {"type": "after_deposit"},
+            "action": {"type": "percentage_of_deposit", "percentage": 10},
+            "conditions": []
+        }
+        self.rule_page.define_json_rule(rule_data)
+        assert self.rule_page.validate_rule_acceptance(), "Rule was not accepted."
+        self.rule_page.simulate_deposit(500)
+        assert self.rule_page.validate_transfer_executed(), "Transfer of 50 units was not executed."
+
+    def test_define_currency_conversion_rule_and_validate(self):
+        """
+        TC-FT-006: Define a rule with 'currency_conversion' trigger, validate graceful rejection, and verify existing rules continue to execute.
+        """
+        rule_data = {
+            "trigger": {"type": "currency_conversion", "currency": "EUR"},
+            "action": {"type": "fixed_amount", "amount": 100},
+            "conditions": []
+        }
+        self.rule_page.define_currency_conversion_rule(rule_data)
+        assert self.rule_page.validate_currency_conversion_rejection(), "Currency conversion rule was not gracefully rejected."
+        assert self.rule_page.validate_existing_rule_execution(), "Existing rules did not continue to execute as expected."
