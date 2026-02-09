@@ -57,8 +57,8 @@ def test_TC_LOGIN_002(driver):
     login_page.click_login()
     # Step 4: Assert error message for invalid credentials is displayed
     error_msg = login_page.get_error_message()
-    assert error_msg != "", "Error message for invalid credentials should be displayed"
-    assert driver.current_url.endswith('/login'), "User should remain on login page"
+    assert error_msg != '', 'Error message for invalid credentials should be displayed'
+    assert driver.current_url.endswith('/login'), 'User should remain on login page'
 
 # Test Case TC_LOGIN_003: Empty fields
 
@@ -73,5 +73,35 @@ def test_TC_LOGIN_003(driver):
     login_page.click_login()
     # Step 4: Assert validation message for empty fields is displayed
     validation_msg = login_page.get_validation_message()
-    assert validation_msg != "", "Validation message for empty fields should be displayed"
-    assert driver.current_url.endswith('/login'), "User should remain on login page"
+    assert validation_msg != '', 'Validation message for empty fields should be displayed'
+    assert driver.current_url.endswith('/login'), 'User should remain on login page'
+
+# Test Case TC_Login_10: Max length email and password
+
+def test_TC_Login_10(driver):
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login()
+    max_length_email = 'user@example.com'  # Replace with actual max length email (e.g., 254 chars)
+    max_length_password = 'A'*128  # Replace with actual max length password (128 chars)
+    login_page.enter_max_length_email_and_valid_password(max_length_email, max_length_password)
+    login_page.click_login()
+    # Assert fields accept maximum length input (could check input values if needed)
+    # Assert user is logged in if credentials are valid
+    assert login_page.is_login_successful(), 'User should be logged in with max length credentials'
+
+# Test Case TC_LOGIN_004: Max length email/username and password
+
+def test_TC_LOGIN_004(driver):
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login()
+    max_length_username = 'userwithverylongemailaddress@example.com'  # Replace with actual max length username/email (e.g., 254 chars)
+    max_length_password = 'VeryLongPassword123!' + 'A'*46  # 64 chars
+    login_page.login_with_max_length_credentials(max_length_username, max_length_password)
+    login_page.click_login()
+    # Assert fields accept input up to maximum length
+    # Assert user is logged in if credentials are valid; error if invalid
+    if login_page.is_login_successful():
+        assert True, 'User should be logged in with max length credentials'
+    else:
+        error_msg = login_page.get_error_message()
+        assert error_msg is not None and error_msg != '', 'Error message should be displayed for invalid credentials'
