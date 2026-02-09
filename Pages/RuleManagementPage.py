@@ -57,7 +57,6 @@ class RuleManagementPage:
         except TimeoutException:
             return False
 
-    # NEW: Helper method for batch upload validation
     def validate_batch_upload(self, expected_count):
         """
         Validates that the expected number of rules are uploaded.
@@ -70,7 +69,6 @@ class RuleManagementPage:
         actual_count = int(rule_count_elem.text)
         return actual_count == expected_count
 
-    # NEW: Helper method for evaluating rules status
     def get_evaluation_status(self):
         """
         Returns the evaluation status of all rules.
@@ -79,7 +77,6 @@ class RuleManagementPage:
         """
         status_elem = self.driver.find_element(By.XPATH, self.locators['evaluation_status_display'])
         status_text = status_elem.text
-        # Parse status_text as needed
         import re
         match = re.search(r"Passed: (\d+), Failed: (\d+)", status_text)
         if match:
@@ -89,7 +86,6 @@ class RuleManagementPage:
             }
         return {}
 
-    # NEW: SQL Injection test for batch
     def check_batch_sql_injection(self, file_path):
         """
         Uploads a batch file with SQL injection rules and checks for rejection.
