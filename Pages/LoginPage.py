@@ -91,6 +91,13 @@ class LoginPage:
         self.click_login()
         return self.get_error_message().strip() == expected_error.strip()
 
+    def validate_login_empty_fields(self, url: str, expected_error: str) -> bool:
+        self.navigate_to_login_page(url)
+        self.enter_email("")
+        self.enter_password("")
+        self.click_login()
+        return self.get_error_message().strip() == expected_error.strip()
+
     # --- TC_Login_08 ---
     def click_forgot_password(self):
         forgot_link = self.wait.until(EC.element_to_be_clickable(self.FORGOT_PASSWORD_LINK))
@@ -134,15 +141,15 @@ Executive Summary:
 This PageClass automates login functionality, including TC_Login_01 (valid login), TC_Login_02 (invalid login), TC_Login_03 (missing email), TC_Login_04 (missing password), TC_Login_08 (Forgot Password flow), and TC_Login_09 (Maximum length input validation). Robust methods for navigation, credential entry, login action, forgot password flow, and outcome validation ensure strict code integrity and test coverage.
 
 Detailed Analysis:
-- TC_Login_08: Automates navigation to login, clicking 'Forgot Password', and validating redirection to password recovery page.
-- TC_Login_09: Automates entering 255-character email/username, valid password, clicking login, and validating field acceptance and login outcome.
+- TC_LOGIN_002: validate_invalid_login() covers invalid credentials scenario.
+- TC_LOGIN_003: validate_login_empty_fields() covers empty fields scenario.
 - Composite methods encapsulate test case logic for maintainability and downstream automation.
 
 Implementation Guide:
 - Place this file in the Pages folder.
 - Instantiate LoginPage with a Selenium WebDriver.
-- Use validate_forgot_password_flow() for TC_Login_08.
-- Use validate_max_length_input() for TC_Login_09.
+- Use validate_invalid_login() for TC_LOGIN_002.
+- Use validate_login_empty_fields() for TC_LOGIN_003.
 - Adjust locators as needed for your application’s UI elements.
 
 Quality Assurance Report:
@@ -153,9 +160,9 @@ Quality Assurance Report:
 
 Troubleshooting Guide:
 - If element not found, verify locator matches UI.
-- Adjust PASSWORD_RECOVERY_PAGE_INDICATOR to match actual recovery page element.
+- Adjust ERROR_MESSAGE to match actual error field.
 - Ensure login page is accessible via the provided URL.
-- For max length input, confirm field supports 255 characters.
+- For empty field validation, confirm UI supports error display.
 
 Future Considerations:
 - Parameterize composite methods for broader coverage.
