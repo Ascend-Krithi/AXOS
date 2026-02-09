@@ -2,19 +2,21 @@
 """
 RuleConfigurationPage Selenium PageClass
 
-This PageClass automates interactions with the Rule Configuration page, covering rule form, triggers, conditions, actions, and validation components. Generated based on Locators.json and test case requirements (TC_SCRUM158_01, TC_SCRUM158_02).
+This PageClass automates interactions with the Rule Configuration page, covering rule form, triggers, conditions, actions, and validation components. Generated based on Locators.json and test case requirements (TC_SCRUM158_07, TC_SCRUM158_08, TC_SCRUM158_01, TC_SCRUM158_02).
 
 QA Report:
 - All locators from Locators.json are mapped as class attributes.
 - Methods are provided for form filling, trigger/condition/action manipulation, and schema validation.
-- No existing RuleConfigurationPage class found; this is a new creation (CASE-Create).
-- Code is structured for downstream integration, using async methods for compatibility with Playwright/Selenium async flows.
+- Updated with bulk addition/validation logic for conditions/actions (CASE-Update).
+- Code is structured for downstream integration, using synchronous Selenium flows.
 - Comprehensive docstrings included for maintainability.
 """
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.common.exceptions import NoSuchElementException
+import time
 
 class RuleConfigurationPage:
     def __init__(self, driver: WebDriver):
@@ -131,3 +133,66 @@ class RuleConfigurationPage:
     def get_schema_error_message(self) -> str:
         """Retrieve the error message after validation failure."""
         return self.schema_error_message.text
+
+    # --- Newly added methods for CASE-Update (TC_SCRUM158_07, TC_SCRUM158_08) ---
+
+    def add_multiple_conditions(self, conditions: list):
+        """
+        Add multiple conditions to the rule configuration.
+        :param conditions: List of dicts with condition details (type, threshold, source, operator).
+        """
+        for cond in conditions:
+            self.add_condition()
+            if 'type' in cond:
+                self.select_condition_type(cond['type'])
+            if 'threshold' in cond:
+                self.set_balance_threshold(cond['threshold'])
+            if 'source' in cond:
+                self.select_transaction_source(cond['source'])
+            if 'operator' in cond:
+                self.select_operator(cond['operator'])
+            time.sleep(0.2)  # Allow UI update
+
+    def add_multiple_actions(self, actions: list):
+        """
+        Add multiple actions to the rule configuration.
+        :param actions: List of dicts with action details (type, amount, percentage, destination_account).
+        """
+        for act in actions:
+            # Assume UI provides a way to add actions similar to conditions
+            self.select_action_type(act.get('type', ''))
+            if 'amount' in act:
+                self.set_transfer_amount(act['amount'])
+            if 'percentage' in act:
+                self.set_percentage(act['percentage'])
+            if 'destination_account' in act:
+                self.set_destination_account(act['destination_account'])
+            time.sleep(0.2)
+
+    def submit_rule(self):
+        """
+        Submit the rule by clicking the save button.
+        """
+        self.save_rule_button.click()
+
+    def is_rule_persisted(self, rule_id: str) -> bool:
+        """
+        Validate if a rule with the given ID exists in the UI after creation.
+        This is a placeholder for UI-based verification (not API).
+        """
+        try:
+            rule_element = self.driver.find_element(By.XPATH, f"//td[text()='{rule_id}']")
+            return rule_element is not None
+        except NoSuchElementException:
+            return False
+
+    def validate_conditions_actions_count(self, expected_conditions: int, expected_actions: int) -> bool:
+        """
+        Validate the number of conditions and actions displayed in the UI.
+        """
+        try:
+            conditions = self.driver.find_elements(By.CSS_SELECTOR, 'div.condition-row')
+            actions = self.driver.find_elements(By.CSS_SELECTOR, 'div.action-row')
+            return len(conditions) == expected_conditions and len(actions) == expected_actions
+        except Exception:
+            return False
