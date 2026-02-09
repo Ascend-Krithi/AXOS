@@ -62,5 +62,27 @@ class TestLogin(unittest.TestCase):
         self.assertEqual(response.get('code'), 400, "API did not return 400 Bad Request for incomplete condition.")
         self.assertIn('Incomplete condition parameters', response.get('message', ''), "Error message not about incomplete condition parameters.")
 
+    # --- New Login Test Methods ---
+    def test_TC_Login_01_valid_login(self):
+        '''
+        TC_Login_01: Valid login - user@example.com / ValidPassword123
+        Expects: Login successful, dashboard loaded.
+        '''
+        self.login_page.enter_username('user@example.com')
+        self.login_page.enter_password('ValidPassword123')
+        self.login_page.click_login()
+        self.assertTrue(self.login_page.is_login_successful(), "Dashboard was not loaded after valid login.")
+
+    def test_TC_Login_02_invalid_login(self):
+        '''
+        TC_Login_02: Invalid login - wronguser@example.com / WrongPassword
+        Expects: Error message 'Invalid credentials' displayed, login not successful.
+        '''
+        self.login_page.enter_username('wronguser@example.com')
+        self.login_page.enter_password('WrongPassword')
+        self.login_page.click_login()
+        self.assertTrue(self.login_page.is_error_displayed(), "Error message 'Invalid credentials' was not displayed.")
+        self.assertFalse(self.login_page.is_login_successful(), "Login was successful with invalid credentials.")
+
 if __name__ == '__main__':
     unittest.main()
