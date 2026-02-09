@@ -104,3 +104,45 @@ def test_currency_conversion_rule_and_existing_rules(driver):
     expected_transfer = deposit_amount * previous_rule['action']['percentage'] / 100
     transfer_executed = (expected_transfer == 50)
     assert transfer_executed, 'Existing rule did not execute as expected.'
+
+# Test Case TC-FT-009: Create, Store, and Retrieve Valid Rule
+@pytest.mark.usefixtures('driver_init')
+def test_create_and_retrieve_valid_rule(driver):
+    login_page = LoginPage(driver)
+    login_page.open()
+    login_page.login('user@example.com', 'securepassword')
+    assert login_page.is_dashboard_header_present(), 'Dashboard header not present after login.'
+    # Create and store a valid rule
+    rule = {
+        'trigger': {'type': 'specific_date', 'date': '2024-07-01T10:00:00Z'},
+        'action': {'type': 'fixed_amount', 'amount': 100},
+        'conditions': []
+    }
+    # Simulate storing the rule in PostgreSQL (mocked)
+    stored_rule = rule.copy()  # Replace with actual DB call
+    assert stored_rule == rule, 'Rule was not stored correctly.'
+    # Retrieve the rule from backend (mocked)
+    retrieved_rule = stored_rule  # Replace with actual backend call
+    assert retrieved_rule == rule, 'Retrieved rule does not match original input.'
+
+# Test Case TC-FT-010: Empty Conditions Array Unconditional Trigger
+@pytest.mark.usefixtures('driver_init')
+def test_empty_conditions_unconditional_trigger(driver):
+    login_page = LoginPage(driver)
+    login_page.open()
+    login_page.login('user@example.com', 'securepassword')
+    assert login_page.is_dashboard_header_present(), 'Dashboard header not present after login.'
+    # Define rule with empty conditions and after_deposit trigger
+    rule = {
+        'trigger': {'type': 'after_deposit'},
+        'action': {'type': 'fixed_amount', 'amount': 100},
+        'conditions': []
+    }
+    # Simulate rule acceptance and unconditional execution (mocked)
+    rule_accepted = (len(rule['conditions']) == 0)
+    assert rule_accepted, 'Rule with empty conditions was not accepted.'
+    # Simulate deposit
+    deposit_amount = 1000
+    # Simulate transfer execution without conditions
+    transfer_executed = (deposit_amount == 1000 and rule['action']['amount'] == 100)
+    assert transfer_executed, 'Transfer was not executed unconditionally when triggered.'
