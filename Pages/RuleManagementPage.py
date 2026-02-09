@@ -1,105 +1,111 @@
+# RuleManagementPage.py
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webdriver import WebDriver
-import json
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 import time
 
 class RuleManagementPage:
-    # Placeholder locators; update as per actual UI
-    DEFINE_RULE_BUTTON = (By.ID, "define-rule-btn")
-    RULE_TYPE_DROPDOWN = (By.ID, "rule-type-dropdown")
-    RULE_TRIGGER_DROPDOWN = (By.ID, "rule-trigger-dropdown")
-    DEPOSIT_AMOUNT_INPUT = (By.ID, "deposit-amount-input")
-    PERCENTAGE_INPUT = (By.ID, "percentage-input")
-    FIXED_AMOUNT_INPUT = (By.ID, "fixed-amount-input")
-    CURRENCY_DROPDOWN = (By.ID, "currency-dropdown")
-    ACCEPT_RULE_BUTTON = (By.ID, "accept-rule-btn")
-    RULE_ACCEPTED_MESSAGE = (By.CSS_SELECTOR, "div.rule-accepted")
-    RULE_REJECTED_MESSAGE = (By.CSS_SELECTOR, "div.rule-rejected")
-    EXECUTE_DEPOSIT_BUTTON = (By.ID, "execute-deposit-btn")
-    TRANSFER_EXECUTED_MESSAGE = (By.CSS_SELECTOR, "div.transfer-executed")
-    EXISTING_RULES_LIST = (By.ID, "existing-rules-list")
-    UPLOAD_RULES_BUTTON = (By.ID, "upload-rules-btn")  # Placeholder
-    EVALUATE_ALL_RULES_BUTTON = (By.ID, "evaluate-all-rules-btn")  # Placeholder
-    SQL_INJECTION_REJECTION_MESSAGE = (By.CSS_SELECTOR, "div.sql-injection-rejected")  # Placeholder
-
-    def __init__(self, driver: WebDriver):
+    def __init__(self, driver, locators):
         self.driver = driver
+        self.locators = locators
 
-    def define_rule(self, rule_type: str, trigger_type: str, **kwargs):
-        self.driver.find_element(*self.DEFINE_RULE_BUTTON).click()
-        self.driver.find_element(*self.RULE_TYPE_DROPDOWN).send_keys(rule_type)
-        self.driver.find_element(*self.RULE_TRIGGER_DROPDOWN).send_keys(trigger_type)
-        if 'percentage' in kwargs:
-            self.driver.find_element(*self.PERCENTAGE_INPUT).clear()
-            self.driver.find_element(*self.PERCENTAGE_INPUT).send_keys(str(kwargs['percentage']))
-        if 'amount' in kwargs:
-            self.driver.find_element(*self.FIXED_AMOUNT_INPUT).clear()
-            self.driver.find_element(*self.FIXED_AMOUNT_INPUT).send_keys(str(kwargs['amount']))
-        if 'currency' in kwargs:
-            self.driver.find_element(*self.CURRENCY_DROPDOWN).send_keys(kwargs['currency'])
-        self.driver.find_element(*self.ACCEPT_RULE_BUTTON).click()
-
-    def get_rule_acceptance_message(self):
-        try:
-            return self.driver.find_element(*self.RULE_ACCEPTED_MESSAGE).text
-        except Exception:
-            return self.driver.find_element(*self.RULE_REJECTED_MESSAGE).text
-
-    def simulate_deposit(self, amount: int):
-        self.driver.find_element(*self.DEPOSIT_AMOUNT_INPUT).clear()
-        self.driver.find_element(*self.DEPOSIT_AMOUNT_INPUT).send_keys(str(amount))
-        self.driver.find_element(*self.EXECUTE_DEPOSIT_BUTTON).click()
-
-    def get_transfer_executed_message(self):
-        return self.driver.find_element(*self.TRANSFER_EXECUTED_MESSAGE).text
-
-    def verify_existing_rules(self):
-        return self.driver.find_element(*self.EXISTING_RULES_LIST).text
-
-    # --- New Methods for TC-FT-007 and TC-FT-008 ---
-    def upload_rules_batch(self, batch_json_path: str):
+    def upload_rules_batch(self, file_path):
         """
-        Uploads a batch of rules from a JSON file.
+        Uploads a batch file containing rules.
         Args:
-            batch_json_path (str): Path to JSON file containing rules.
+            file_path (str): Path to the rules file to upload.
         """
-        self.driver.find_element(*self.UPLOAD_RULES_BUTTON).click()
-        upload_input = self.driver.find_element(By.ID, "rules-upload-input")  # Placeholder
-        upload_input.send_keys(batch_json_path)
-        self.driver.find_element(*self.ACCEPT_RULE_BUTTON).click()
-        # Wait for upload to complete
-        time.sleep(5)  # Adjust as per system response
+        upload_input = self.driver.find_element(By.XPATH, self.locators['rule_upload_input'])
+        upload_input.send_keys(file_path)
+        upload_button = self.driver.find_element(By.XPATH, self.locators['rule_upload_button'])
+        upload_button.click()
+        # Wait for upload confirmation
+        WebDriverWait(self.driver, 60).until(
+            EC.visibility_of_element_located((By.XPATH, self.locators['upload_success_message']))
+        )
 
     def evaluate_all_rules(self):
         """
-        Triggers evaluation for all rules simultaneously.
+        Evaluates all rules in the system.
         """
-        self.driver.find_element(*self.EVALUATE_ALL_RULES_BUTTON).click()
+        eval_button = self.driver.find_element(By.XPATH, self.locators['evaluate_all_button'])
+        eval_button.click()
         # Wait for evaluation to complete
-        time.sleep(10)  # Adjust as per system response
+        WebDriverWait(self.driver, 120).until(
+            EC.visibility_of_element_located((By.XPATH, self.locators['evaluation_complete_message']))
+        )
 
-    def submit_rule_with_sql_injection(self, rule_data: dict):
+    def check_sql_injection_rejection(self, malicious_rule):
         """
-        Submits a rule with SQL injection payload.
+        Attempts to upload a rule with SQL injection and verifies rejection.
         Args:
-            rule_data (dict): Rule data with SQL injection in field value.
+            malicious_rule (str): Rule string containing SQL injection.
+        Returns:
+            bool: True if rejected, False otherwise.
         """
-        self.driver.find_element(*self.DEFINE_RULE_BUTTON).click()
-        # Example for filling fields; update as per actual UI
-        self.driver.find_element(*self.RULE_TYPE_DROPDOWN).send_keys(rule_data.get('type', ''))
-        self.driver.find_element(*self.RULE_TRIGGER_DROPDOWN).send_keys(rule_data.get('trigger', {}).get('type', ''))
-        self.driver.find_element(*self.FIXED_AMOUNT_INPUT).clear()
-        self.driver.find_element(*self.FIXED_AMOUNT_INPUT).send_keys(str(rule_data.get('action', {}).get('amount', '')))
-        # SQL injection field
-        self.driver.find_element(By.ID, "balance-threshold-input").clear()
-        self.driver.find_element(By.ID, "balance-threshold-input").send_keys(rule_data.get('conditions', [{}])[0].get('value', ''))
-        self.driver.find_element(*self.ACCEPT_RULE_BUTTON).click()
-
-    def get_sql_injection_rejection_message(self):
-        """
-        Returns the SQL injection rejection message.
-        """
+        upload_input = self.driver.find_element(By.XPATH, self.locators['rule_upload_input'])
+        upload_input.clear()
+        upload_input.send_keys(malicious_rule)
+        upload_button = self.driver.find_element(By.XPATH, self.locators['rule_upload_button'])
+        upload_button.click()
         try:
-            return self.driver.find_element(*self.SQL_INJECTION_REJECTION_MESSAGE).text
-        except Exception:
-            return self.driver.find_element(*self.RULE_REJECTED_MESSAGE).text
+            WebDriverWait(self.driver, 10).until(
+                EC.visibility_of_element_located((By.XPATH, self.locators['sql_injection_error_message']))
+            )
+            return True
+        except TimeoutException:
+            return False
+
+    # NEW: Helper method for batch upload validation
+    def validate_batch_upload(self, expected_count):
+        """
+        Validates that the expected number of rules are uploaded.
+        Args:
+            expected_count (int): Expected number of rules.
+        Returns:
+            bool: True if count matches, False otherwise.
+        """
+        rule_count_elem = self.driver.find_element(By.XPATH, self.locators['rule_count_display'])
+        actual_count = int(rule_count_elem.text)
+        return actual_count == expected_count
+
+    # NEW: Helper method for evaluating rules status
+    def get_evaluation_status(self):
+        """
+        Returns the evaluation status of all rules.
+        Returns:
+            dict: Status summary (e.g., {'passed': 9990, 'failed': 10})
+        """
+        status_elem = self.driver.find_element(By.XPATH, self.locators['evaluation_status_display'])
+        status_text = status_elem.text
+        # Parse status_text as needed
+        import re
+        match = re.search(r"Passed: (\d+), Failed: (\d+)", status_text)
+        if match:
+            return {
+                'passed': int(match.group(1)),
+                'failed': int(match.group(2))
+            }
+        return {}
+
+    # NEW: SQL Injection test for batch
+    def check_batch_sql_injection(self, file_path):
+        """
+        Uploads a batch file with SQL injection rules and checks for rejection.
+        Args:
+            file_path (str): Path to batch file.
+        Returns:
+            bool: True if all SQL injections are rejected, False otherwise.
+        """
+        upload_input = self.driver.find_element(By.XPATH, self.locators['rule_upload_input'])
+        upload_input.send_keys(file_path)
+        upload_button = self.driver.find_element(By.XPATH, self.locators['rule_upload_button'])
+        upload_button.click()
+        try:
+            WebDriverWait(self.driver, 10).until(
+                EC.visibility_of_element_located((By.XPATH, self.locators['sql_injection_error_message']))
+            )
+            return True
+        except TimeoutException:
+            return False

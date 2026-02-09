@@ -1,0 +1,10 @@
+{
+  "rule_upload_input": "//input[@id='rule-upload']",
+  "rule_upload_button": "//button[@id='upload-rules']",
+  "upload_success_message": "//div[@class='upload-success']",
+  "evaluate_all_button": "//button[@id='evaluate-all']",
+  "evaluation_complete_message": "//div[@class='evaluation-complete']",
+  "sql_injection_error_message": "//div[contains(text(),'SQL injection detected')]",
+  "rule_count_display": "//span[@id='rule-count']",
+  "evaluation_status_display": "//div[@id='evaluation-status']"
+}
