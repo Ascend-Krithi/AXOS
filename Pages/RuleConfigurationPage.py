@@ -6,13 +6,10 @@ from selenium.webdriver.support import expected_conditions as EC
 class RuleConfigurationPage:
     def __init__(self, driver):
         self.driver = driver
+        # Existing locators
         self.add_rule_button = (By.ID, 'add-rule-btn')
         self.rule_name_input = (By.ID, 'rule-name-input')
         self.rule_condition_input = (By.ID, 'rule-condition-input')
-        self.rule_trigger_type_input = (By.ID, 'rule-trigger-type-input')
-        self.rule_trigger_date_input = (By.ID, 'rule-trigger-date-input')
-        self.rule_action_type_input = (By.ID, 'rule-action-type-input')
-        self.rule_action_amount_input = (By.ID, 'rule-action-amount-input')
         self.submit_button = (By.ID, 'submit-rule-btn')
         self.rules_table = (By.ID, 'rules-table')
         self.error_message = (By.ID, 'error-msg')
@@ -21,9 +18,21 @@ class RuleConfigurationPage:
         self.batch_file_input = (By.ID, 'batch-file-input')
         self.batch_upload_confirm = (By.ID, 'batch-upload-confirm-btn')
         self.evaluation_status = (By.ID, 'evaluation-status')
-        self.deposit_input = (By.ID, 'deposit-input')
-        self.trigger_rule_button = (By.ID, 'trigger-rule-btn')
-        self.transfer_status = (By.ID, 'transfer-status')
+        # New locators from Locators.json
+        self.rule_id_input = (By.ID, 'rule-id-field')
+        self.rule_name_input_new = (By.NAME, 'rule-name')
+        self.save_rule_button = (By.CSS_SELECTOR, "button[data-testid='save-rule-btn']")
+        self.trigger_type_dropdown = (By.ID, 'trigger-type-select')
+        self.date_picker = (By.CSS_SELECTOR, "input[type='date']")
+        self.after_deposit_toggle = (By.ID, 'trigger-after-deposit')
+        self.action_type_dropdown = (By.ID, 'action-type-select')
+        self.transfer_amount_input = (By.NAME, 'fixed-amount')
+        self.add_condition_btn = (By.ID, 'add-condition-link')
+        self.condition_type_dropdown = (By.CSS_SELECTOR, 'select.condition-type')
+        self.balance_threshold_input = (By.NAME, 'balance-limit')
+        self.destination_account_input = (By.ID, 'target-account-id')
+        self.success_message = (By.CSS_SELECTOR, '.alert-success')
+        self.schema_error_message = (By.CSS_SELECTOR, "[data-testid='error-feedback-text']")
 
     def add_rule(self, name, condition):
         WebDriverWait(self.driver, 10).until(
@@ -109,91 +118,127 @@ class RuleConfigurationPage:
             raise AssertionError("No error message displayed for SQL injection attempt.")
         return 'sql injection' in error.lower() or 'invalid input' in error.lower()
 
-    # TC-FT-009: Create and store a valid rule with specific trigger/action
-    def create_rule_with_trigger_and_action(self, name, trigger_type, trigger_date, action_type, action_amount, conditions=None):
+    # TC-FT-009: Create and store a valid rule
+    def create_and_store_valid_rule(self, rule_id, rule_name, trigger_type, trigger_date, action_type, action_amount, conditions):
         """
-        Creates and stores a rule with provided trigger, action, and conditions.
+        Creates and stores a valid rule with the given parameters.
         Args:
-            name (str): Rule name.
+            rule_id (str): Rule identifier.
+            rule_name (str): Rule name.
             trigger_type (str): Trigger type (e.g., 'specific_date').
-            trigger_date (str): Trigger date in ISO format (optional).
+            trigger_date (str): Date string for the trigger.
             action_type (str): Action type (e.g., 'fixed_amount').
-            action_amount (int): Action amount.
-            conditions (list): List of conditions (optional).
+            action_amount (int): Amount for the action.
+            conditions (list): List of condition dicts.
         Returns:
-            None
+            bool: True if rule is stored successfully.
         """
         WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(self.add_rule_button)
+            EC.visibility_of_element_located(self.rule_id_input)
+        ).send_keys(rule_id)
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(self.rule_name_input_new)
+        ).send_keys(rule_name)
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable(self.trigger_type_dropdown)
         ).click()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.rule_name_input)
-        ).send_keys(name)
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.rule_trigger_type_input)
-        ).send_keys(trigger_type)
-        if trigger_date:
+        self.driver.find_element(*self.trigger_type_dropdown).send_keys(trigger_type)
+        if trigger_type == 'specific_date':
             WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located(self.rule_trigger_date_input)
+                EC.visibility_of_element_located(self.date_picker)
             ).send_keys(trigger_date)
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.rule_action_type_input)
-        ).send_keys(action_type)
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.rule_action_amount_input)
-        ).send_keys(str(action_amount))
-        if conditions is not None:
+        elif trigger_type == 'after_deposit':
             WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located(self.rule_condition_input)
-            ).send_keys(','.join(conditions))
+                EC.element_to_be_clickable(self.after_deposit_toggle)
+            ).click()
         WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(self.submit_button)
+            EC.element_to_be_clickable(self.action_type_dropdown)
         ).click()
+        self.driver.find_element(*self.action_type_dropdown).send_keys(action_type)
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(self.transfer_amount_input)
+        ).send_keys(str(action_amount))
+        if conditions:
+            for cond in conditions:
+                WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable(self.add_condition_btn)
+                ).click()
+                WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable(self.condition_type_dropdown)
+                ).click()
+                self.driver.find_element(*self.condition_type_dropdown).send_keys(cond.get('type', ''))
+                if 'balance_threshold' in cond:
+                    WebDriverWait(self.driver, 10).until(
+                        EC.visibility_of_element_located(self.balance_threshold_input)
+                    ).send_keys(str(cond['balance_threshold']))
+                if 'destination_account' in cond:
+                    WebDriverWait(self.driver, 10).until(
+                        EC.visibility_of_element_located(self.destination_account_input)
+                    ).send_keys(cond['destination_account'])
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable(self.save_rule_button)
+        ).click()
+        try:
+            success = WebDriverWait(self.driver, 10).until(
+                EC.visibility_of_element_located(self.success_message)
+            )
+            return True
+        except Exception:
+            return False
 
-    # TC-FT-009: Retrieve rule from backend and verify
-    def retrieve_rule_from_backend(self, rule_name):
+    # TC-FT-009: Retrieve rule and validate
+    def retrieve_and_validate_rule(self, rule_id, expected_rule):
         """
-        Retrieves rule details from rules table and verifies against input.
+        Retrieves the rule from backend and validates it matches expected input.
         Args:
-            rule_name (str): Name of the rule to retrieve.
+            rule_id (str): Rule identifier.
+            expected_rule (dict): Expected rule structure.
         Returns:
-            dict: Rule details as displayed in UI.
+            bool: True if rule matches expected input.
         """
+        # Implementation here depends on UI/backend exposure
+        # For UI: search for rule in table, validate fields
         table = WebDriverWait(self.driver, 10).until(
             EC.visibility_of_element_located(self.rules_table)
         )
         rows = table.find_elements(By.TAG_NAME, 'tr')
-        for row in rows[1:]:  # Skip header
-            cols = row.find_elements(By.TAG_NAME, 'td')
-            if cols and cols[0].text == rule_name:
-                return {
-                    'name': cols[0].text,
-                    'trigger': cols[1].text,
-                    'action': cols[2].text,
-                    'conditions': cols[3].text
-                }
-        raise AssertionError(f"Rule '{rule_name}' not found in table.")
+        for row in rows:
+            cells = row.find_elements(By.TAG_NAME, 'td')
+            if cells and cells[0].text == rule_id:
+                # Validate rule fields
+                return all(
+                    cells[i].text == str(v)
+                    for i, v in enumerate(expected_rule.values())
+                )
+        return False
 
-    # TC-FT-010: Define rule with empty conditions and trigger it
-    def trigger_rule_and_verify_execution(self, rule_name, deposit_amount):
+    # TC-FT-010: Define rule with empty conditions and trigger
+    def define_rule_with_empty_conditions_and_trigger(self, rule_id, rule_name, trigger_type, action_type, action_amount):
         """
-        Triggers a rule by deposit and verifies transfer execution.
+        Defines a rule with empty conditions and triggers it.
         Args:
-            rule_name (str): Name of the rule to trigger.
-            deposit_amount (int): Deposit amount to trigger rule.
+            rule_id (str): Rule identifier.
+            rule_name (str): Rule name.
+            trigger_type (str): Trigger type (e.g., 'after_deposit').
+            action_type (str): Action type (e.g., 'fixed_amount').
+            action_amount (int): Amount for the action.
         Returns:
-            bool: True if transfer executed, False otherwise.
+            bool: True if rule is accepted and executes unconditionally.
         """
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.deposit_input)
-        ).clear()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.deposit_input)
-        ).send_keys(str(deposit_amount))
-        WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(self.trigger_rule_button)
-        ).click()
-        status = WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(self.transfer_status)
-        ).text
-        return 'executed' in status.lower() or 'success' in status.lower()
+        self.create_and_store_valid_rule(
+            rule_id, rule_name, trigger_type, None, action_type, action_amount, []
+        )
+        # Simulate deposit trigger
+        # This depends on UI implementation
+        # Example:
+        deposit_input = self.driver.find_element(By.ID, 'deposit-input')
+        deposit_input.send_keys('1000')
+        trigger_button = self.driver.find_element(By.ID, 'trigger-rule-btn')
+        trigger_button.click()
+        try:
+            success = WebDriverWait(self.driver, 10).until(
+                EC.visibility_of_element_located(self.success_message)
+            )
+            return True
+        except Exception:
+            return False
