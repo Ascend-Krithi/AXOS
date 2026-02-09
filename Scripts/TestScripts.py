@@ -1,4 +1,6 @@
-{Import necessary modules}
+# imports
+import pytest
+from Pages.RuleConfigurationPage import RuleConfigurationPage
 
 class TestLoginFunctionality:
     def __init__(self, page):
@@ -15,9 +17,6 @@ class TestLoginFunctionality:
         await self.login_page.fill_email('')
 
 # --- Begin Rule Configuration Tests ---
-
-import pytest
-from Pages.RuleConfigurationPage import RuleConfigurationPage
 
 class TestRuleConfiguration:
     def setup_method(self):
@@ -44,9 +43,12 @@ class TestRuleConfiguration:
         rule_name = "Specific Date Rule"
         date_str = "2024-07-01T10:00:00Z"
         amount = 100
-        self.rule_page.define_rule_with_specific_date(rule_id, rule_name, date_str, amount)
-        # Simulate system time and verify transfer action
-        self.rule_page.simulate_time_and_verify_transfer("specific_date", date_str, self.verify_transfer_action)
+        dest_account = "DEST_ACC_001"
+        self.rule_page.define_specific_date_rule(rule_id, rule_name, date_str, amount, dest_account)
+        # Simulate system time
+        self.rule_page.simulate_system_time(date_str)
+        # Verify transfer action
+        assert self.verify_transfer_action() is True
 
     def test_define_rule_recurring_weekly_and_verify_transfer(self):
         """
@@ -58,6 +60,9 @@ class TestRuleConfiguration:
         rule_name = "Recurring Weekly Rule"
         interval = "weekly"
         percentage = 10
-        self.rule_page.define_rule_with_recurring_interval(rule_id, rule_name, interval, percentage)
-        # Simulate passing of several weeks and verify transfer action
-        self.rule_page.simulate_time_and_verify_transfer("recurring", interval, self.verify_transfer_action)
+        dest_account = "DEST_ACC_002"
+        self.rule_page.define_recurring_rule(rule_id, rule_name, interval, percentage, dest_account)
+        # Simulate passing of several weeks
+        self.rule_page.simulate_weeks_passing(3)
+        # Verify transfer action
+        assert self.verify_transfer_action() is True
