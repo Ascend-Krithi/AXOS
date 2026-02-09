@@ -57,3 +57,24 @@ class TestRuleConfiguration:
             assert persisted_rule is not None, "Rule with empty conditions/actions was not persisted"
             assert persisted_rule['conditions'] == [], "Conditions array is not empty"
             assert persisted_rule['actions'] == [], "Actions array is not empty"
+
+    def test_minimum_required_fields_rule(self):
+        """
+        TC_SCRUM158_09 - Prepare a rule schema with minimum required fields, submit, and validate via UI and API.
+        """
+        result = self.rule_page.validate_minimum_required_fields_schema()
+        assert 'ui_result' in result, "UI validation missing"
+        assert 'api_status' in result, "API status missing"
+        assert result['ui_result'] == 'Rule created successfully' or 'valid' in result['ui_result'].lower(), f"UI validation failed: {result['ui_result']}"
+        assert result['api_status'] == 201 or result['api_status'] == 200, f"API failed to create rule: {result['api_response']}"
+
+    def test_unsupported_trigger_type_rule(self):
+        """
+        TC_SCRUM158_10 - Prepare a rule schema with unsupported trigger type, submit, and validate extensibility via UI and API.
+        """
+        result = self.rule_page.validate_unsupported_trigger_type_schema(trigger_value="future_trigger")
+        assert 'ui_result' in result, "UI validation missing"
+        assert 'api_status' in result, "API status missing"
+        # Accept either error or acceptance depending on business rule
+        assert result['ui_result'] == 'Rule created successfully' or 'unsupported' in result['ui_result'].lower() or 'error' in result['ui_result'].lower(), f"UI validation failed: {result['ui_result']}"
+        assert result['api_status'] == 201 or result['api_status'] == 400 or result['api_status'] == 422, f"API failed to handle unsupported trigger: {result['api_response']}"
