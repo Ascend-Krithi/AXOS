@@ -7,6 +7,8 @@ from Pages.RuleConfigurationPage import (
     retrieve_and_validate_rule,
     robust_error_handling_and_schema_validation
 )
+from Pages.LoginPage import LoginPage
+from selenium import webdriver
 
 class TestRuleConfiguration(unittest.TestCase):
 
@@ -34,3 +36,40 @@ class TestRuleConfiguration(unittest.TestCase):
         # Assert business rule: e.g., rule may not be active, or must show validation error depending on requirements
         # If business rule expects error, add:
         # self.assertIn('error', persisted_rule)
+
+class TestLogin(unittest.TestCase):
+    """
+    Test cases for Login functionality using LoginPage Page Object.
+    """
+    def setUp(self):
+        self.driver = webdriver.Chrome()  # Or use webdriver.Firefox(), etc.
+        self.login_page = LoginPage(self.driver)
+
+    def tearDown(self):
+        self.driver.quit()
+
+    def test_TC_Login_01_valid_login(self):
+        """
+        TC_Login_01: Valid login with user@example.com / ValidPassword123
+        Steps:
+        1. Navigate to login page
+        2. Enter valid credentials
+        3. Click login
+        4. Verify dashboard loaded
+        """
+        result = self.login_page.login_and_verify("user@example.com", "ValidPassword123")
+        self.assertTrue(result['success'], "User should be logged in and redirected to dashboard.")
+        self.assertEqual(result['error_message'], "", "No error message should be displayed for valid login.")
+
+    def test_TC_Login_02_invalid_login(self):
+        """
+        TC_Login_02: Invalid login with wronguser@example.com / WrongPassword
+        Steps:
+        1. Navigate to login page
+        2. Enter invalid credentials
+        3. Click login
+        4. Verify error message displayed, user not logged in
+        """
+        result = self.login_page.login_and_verify("wronguser@example.com", "WrongPassword")
+        self.assertFalse(result['success'], "User should not be logged in with invalid credentials.")
+        self.assertNotEqual(result['error_message'], "", "Error message should be displayed for invalid login.")
