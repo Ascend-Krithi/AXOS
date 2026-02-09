@@ -8,10 +8,10 @@ class DepositPage:
         self.driver = driver
 
     def simulate_deposit(self, amount):
-        """
+        '''
         Simulates a deposit of the given amount.
         :param amount: The amount to deposit
-        """
+        '''
         deposit_field = self.driver.find_element(By.ID, 'deposit-amount')
         deposit_field.clear()
         deposit_field.send_keys(str(amount))
@@ -22,9 +22,9 @@ class DepositPage:
         )
 
     def verify_transfer_executed(self, expected_transfer):
-        """
+        '''
         Verifies that the transfer of expected units is executed.
         :param expected_transfer: The expected transfer amount
-        """
+        '''
         transfer_msg = self.driver.find_element(By.CSS_SELECTOR, 'div.transfer-success')
         return str(expected_transfer) in transfer_msg.text
