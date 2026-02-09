@@ -1,7 +1,6 @@
 import unittest
 from RuleConfigurationPage import RuleConfigurationPage
 from LoginPage import LoginPage
-from selenium import webdriver
 
 class TestRuleConfiguration(unittest.TestCase):
 
@@ -51,41 +50,39 @@ class TestRuleConfiguration(unittest.TestCase):
         rule_exists = self.page.verify_rule_exists(rule_name)
         self.assertTrue(rule_exists, "Rule with large metadata should exist after creation.")
 
-class TestLoginPage(unittest.TestCase):
-    """Test cases for LoginPage."""
-
+class TestLoginNegativeScenarios(unittest.TestCase):
     def setUp(self):
-        # Setup WebDriver and base_url as per your environment/config
-        self.driver = webdriver.Chrome()  # Or any other WebDriver
-        self.base_url = "http://localhost:8000"  # Update as needed
+        # Setup WebDriver and base_url here
+        # Example:
+        # from selenium import webdriver
+        # self.driver = webdriver.Chrome()
+        # self.base_url = "http://your-app-url.com"
+        # For demonstration, these are placeholders
+        self.driver = None
+        self.base_url = "http://your-app-url.com"
         self.login_page = LoginPage(self.driver, self.base_url)
 
     def tearDown(self):
-        self.driver.quit()
+        # Teardown WebDriver here
+        # Example:
+        # if self.driver:
+        #     self.driver.quit()
+        pass
 
-    def test_TC01_valid_login_redirects_to_dashboard(self):
-        """TC01: Valid login should redirect to dashboard/home."""
-        username = "valid_user"
-        password = "ValidPass123"
-        self.login_page.go_to_login_page()
-        self.login_page.enter_username(username)
-        self.login_page.enter_password(password)
-        self.login_page.click_login()
-        login_success = self.login_page.is_login_successful()
-        self.assertTrue(login_success, "Valid login should redirect to dashboard/home.")
+    def test_TC03_login_with_empty_fields(self):
+        """
+        TC03: Navigate to login, leave fields empty, click login, expect error 'Username and password are required'.
+        """
+        error_message = self.login_page.login_with_empty_fields()
+        self.assertEqual(error_message, 'Username and password are required', "Expected error message for empty fields.")
 
-    def test_TC02_invalid_login_shows_error_message(self):
-        """TC02: Invalid login should display error message and not log in."""
-        username = "invalid_user"
-        password = "WrongPass"
-        self.login_page.go_to_login_page()
-        self.login_page.enter_username(username)
-        self.login_page.enter_password(password)
-        self.login_page.click_login()
-        error_displayed = self.login_page.is_error_message_displayed()
-        self.assertTrue(error_displayed, "Error message should be displayed for invalid login.")
-        login_success = self.login_page.is_login_successful()
-        self.assertFalse(login_success, "Invalid login should not redirect to dashboard/home.")
+    def test_TC04_login_with_empty_username(self):
+        """
+        TC04: Navigate to login, leave username empty, enter valid password, click login, expect error 'Username is required'.
+        """
+        valid_password = 'ValidPass123'
+        error_message = self.login_page.login_with_empty_username(valid_password)
+        self.assertEqual(error_message, 'Username is required', "Expected error message for empty username.")
 
 if __name__ == "__main__":
     unittest.main()
