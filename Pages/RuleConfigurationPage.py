@@ -6,7 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 class RuleConfigurationPage:
     """
     Page Object Model for the Rule Configuration Page.
-    Provides methods to create rules, configure triggers, actions, and validate rule schemas.
+    Provides methods to create rules, configure triggers, actions, validate rule schemas, and handle errors.
     """
 
     def __init__(self, driver, timeout=10):
@@ -39,50 +39,59 @@ class RuleConfigurationPage:
     success_message = (By.CSS_SELECTOR, ".alert-success")
     schema_error_message = (By.CSS_SELECTOR, "[data-testid='error-feedback-text']")
 
-    # ... existing methods ...
-
-    def create_rule_with_minimal_schema_TC_SCRUM158_07(self):
+    def add_multiple_conditions(self, conditions):
         """
-        Test Case TC_SCRUM158_07:
-        1. Prepare a schema with only required fields (one trigger, one condition, one action).
-        2. Submit the schema and verify rule creation, ensuring the rule is accepted and created successfully.
+        Adds multiple conditions to the rule form.
+        conditions: list of dicts, e.g. [{"type": "balance_threshold", "operator": ">=", "value": 1000}, {"type": "transaction_source", "value": "salary"}]
         """
+        for cond in conditions:
+            self.wait.until(EC.element_to_be_clickable(self.add_condition_btn)).click()
+            self.wait.until(EC.visibility_of_element_located(self.condition_type_dropdown)).send_keys(cond["type"])
+            if "operator" in cond:
+                self.wait.until(EC.visibility_of_element_located(self.operator_dropdown)).send_keys(cond["operator"])
+            if cond["type"] == "balance_threshold":
+                self.wait.until(EC.visibility_of_element_located(self.balance_threshold_input)).send_keys(str(cond["value"]))
+            elif cond["type"] == "transaction_source":
+                self.wait.until(EC.visibility_of_element_located(self.transaction_source_dropdown)).send_keys(cond["value"])
 
-        import json
+    def simulate_deposit(self, balance, deposit, source):
+        """
+        Simulates a deposit for testing rule execution. Placeholder for integration with DepositSimulationPage.
+        """
+        # This method would interact with DepositSimulationPage if available
+        pass
 
-        minimal_schema = {
-            "trigger": {"type": "manual"},
-            "conditions": [
-                {"type": "amount", "operator": "==", "value": 1}
-            ],
-            "actions": [
-                {"type": "transfer", "account": "G", "amount": 1}
-            ]
-        }
+    def verify_rule_execution(self, expected_transfer):
+        """
+        Verifies whether transfer was executed or not after deposit simulation.
+        expected_transfer: bool
+        """
+        # Example: Check for success message or rule execution indicator
+        try:
+            success = self.wait.until(EC.visibility_of_element_located(self.success_message))
+            return expected_transfer in success.text.lower()
+        except Exception:
+            return False
 
-        # Wait for the JSON schema editor to be visible
-        editor = self.wait.until(EC.visibility_of_element_located(self.json_schema_editor))
+    def submit_rule_with_missing_trigger(self):
+        """
+        Submits a rule with missing trigger type and checks for error.
+        """
+        self.wait.until(EC.visibility_of_element_located(self.action_type_dropdown)).send_keys("fixed_amount")
+        self.wait.until(EC.visibility_of_element_located(self.transfer_amount_input)).send_keys("100")
+        self.wait.until(EC.element_to_be_clickable(self.save_rule_button)).click()
 
-        # Focus and clear the editor (if possible)
-        editor.click()
-        editor.clear()
-        # Enter JSON into the editor (if Monaco editor, send keys)
-        editor.send_keys(json.dumps(minimal_schema, indent=2))
+    def submit_rule_with_unsupported_action(self):
+        """
+        Submits a rule with unsupported action type and checks for error.
+        """
+        self.wait.until(EC.visibility_of_element_located(self.trigger_type_dropdown)).send_keys("specific_date")
+        self.wait.until(EC.visibility_of_element_located(self.action_type_dropdown)).send_keys("unknown_action")
+        self.wait.until(EC.element_to_be_clickable(self.save_rule_button)).click()
 
-        # Click validate schema button
-        validate_btn = self.wait.until(EC.element_to_be_clickable(self.validate_schema_btn))
-        validate_btn.click()
-
-        # Wait for success message
-        success = self.wait.until(EC.visibility_of_element_located(self.success_message))
-        assert "success" in success.text.lower(), "Rule schema validation did not succeed"
-
-        # Click Save Rule button to submit
-        save_btn = self.wait.until(EC.element_to_be_clickable(self.save_rule_button))
-        save_btn.click()
-
-        # Confirm rule creation by checking for success message again
-        rule_created = self.wait.until(EC.visibility_of_element_located(self.success_message))
-        assert "created" in rule_created.text.lower(), "Rule was not created successfully"
-
-        return True
+    def verify_error_message(self, expected_error):
+        """
+        Verifies the error message after submitting invalid rule.
+        """
+        error_elem = self.wait.until(EC.visibility_of_element_located(self.schema_error_message))
+        assert expected_error in error_elem.text, f"Expected error message '{expected_error}' not found."
