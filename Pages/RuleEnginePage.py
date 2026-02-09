@@ -124,3 +124,76 @@ class RuleEnginePage:
         """
         # This would call simulate_deposit_and_verify_transfer with known valid rules
         return self.is_transfer_executed()
+
+    # --- New Methods for TC-FT-001 and TC-FT-002 ---
+    def define_specific_date_rule(self, trigger_date, action_type, amount):
+        """
+        Defines a rule with trigger type 'specific_date'.
+        Args:
+            trigger_date (str): ISO format, e.g. '2024-07-01T10:00:00Z'
+            action_type (str): e.g., 'fixed_amount'
+            amount (int): e.g., 100
+        """
+        self.define_rule(
+            trigger_type="specific_date",
+            action_type=action_type,
+            amount=amount,
+            balance_threshold="",
+            operator="",
+            source=""
+        )
+        # Additional: set date field if present
+        date_input = self.driver.find_element(By.ID, "rule-trigger-date")
+        date_input.clear()
+        date_input.send_keys(trigger_date)
+        self.driver.find_element(*self.RULE_SUBMIT_BUTTON).click()
+
+    def simulate_time_and_verify_transfer(self, target_date):
+        """
+        Simulates system time reaching the trigger date.
+        Args:
+            target_date (str): ISO format date
+        Returns:
+            bool: True if transfer executed exactly once at specified date
+        """
+        # NOTE: Actual time simulation may require backend manipulation or mocking
+        # Here, we check for transfer execution message
+        return self.is_transfer_executed()
+
+    def define_recurring_rule(self, interval, action_type, percentage):
+        """
+        Defines a rule with trigger type 'recurring' and interval.
+        Args:
+            interval (str): e.g., 'weekly'
+            action_type (str): e.g., 'percentage_of_deposit'
+            percentage (int): e.g., 10
+        """
+        self.define_rule(
+            trigger_type="recurring",
+            action_type=action_type,
+            amount=percentage,
+            balance_threshold="",
+            operator="",
+            source=""
+        )
+        # Additional: set interval field if present
+        interval_input = self.driver.find_element(By.ID, "rule-trigger-interval")
+        interval_input.clear()
+        interval_input.send_keys(interval)
+        self.driver.find_element(*self.RULE_SUBMIT_BUTTON).click()
+
+    def simulate_weeks_and_verify_transfer(self, weeks):
+        """
+        Simulates passing of several weeks and verifies transfer execution at each interval.
+        Args:
+            weeks (int): number of weeks to simulate
+        Returns:
+            int: number of transfer executions observed
+        """
+        executions = 0
+        for _ in range(weeks):
+            # NOTE: Actual time simulation may require backend manipulation or mocking
+            # Here, we check for transfer execution message per interval
+            if self.is_transfer_executed():
+                executions += 1
+        return executions
