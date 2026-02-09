@@ -80,3 +80,26 @@ class TestRuleConfiguration:
         }
         self.rule_config_page.submit_rule_with_unsupported_action(rule_data_unsupported_action)
         assert self.rule_config_page.verify_unsupported_action_error()
+
+    async def test_TC_SCRUM158_03_interval_trigger_rule(self):
+        '''
+        TC_SCRUM158_03: Create a schema with a recurring interval trigger (weekly, amount 1000), submit rule, and verify scheduling logic.
+        '''
+        interval = 'weekly'
+        amount = 1000
+        # Create rule with interval trigger
+        self.rule_mgmt_page.create_interval_trigger_rule(interval, amount)
+        # Verify rule is scheduled for recurring evaluation
+        assert self.rule_mgmt_page.verify_rule_scheduled(interval), f"Rule scheduling failed for interval: {interval}"
+
+    async def test_TC_SCRUM158_04_missing_trigger_schema(self):
+        '''
+        TC_SCRUM158_04: Prepare a schema missing the 'trigger' field, submit rule, and verify error message.
+        '''
+        rule_data_missing_trigger = {
+            'ruleName': 'Missing Trigger Rule',
+            'conditions': [{'type': 'amount', 'operator': '<', 'value': 50}],
+            'actions': [{'type': 'transfer', 'account': 'D', 'amount': 50}]
+        }
+        self.rule_config_page.submit_rule_with_missing_trigger(rule_data_missing_trigger)
+        assert self.rule_config_page.verify_missing_trigger_error(), "Expected error for missing 'trigger' field, but error was not shown."
