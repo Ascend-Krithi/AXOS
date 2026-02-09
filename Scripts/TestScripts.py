@@ -142,3 +142,28 @@ class TestRuleConfiguration:
         # await self.rule_config_page.enter_message('Transfer complete')
         await self.rule_config_page.click_save_rule()
         assert await self.rule_config_page.get_success_message() == 'Rule created successfully'
+
+    # TC_SCRUM158_03: Recurring interval trigger rule creation
+    async def test_TC_SCRUM158_03(self):
+        await self.rule_config_page.create_recurring_rule(
+            rule_id='TC_SCRUM158_03',
+            rule_name='Recurring Interval Rule',
+            interval='weekly',
+            condition_operator='>=',
+            condition_value=1000,
+            action_account='C',
+            action_amount=1000
+        )
+        assert await self.rule_config_page.get_success_message() == 'Rule created successfully'
+
+    # TC_SCRUM158_04: Validation of missing trigger field
+    async def test_TC_SCRUM158_04(self):
+        error_message = await self.rule_config_page.create_rule_without_trigger(
+            rule_id='TC_SCRUM158_04',
+            rule_name='Missing Trigger Rule',
+            condition_operator='<',
+            condition_value=50,
+            action_account='D',
+            action_amount=50
+        )
+        assert 'trigger' in error_message.lower() or 'missing' in error_message.lower()
