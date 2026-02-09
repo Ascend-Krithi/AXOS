@@ -85,28 +85,25 @@ class TestLoginFunctionality:
         login_success = login_page.login_and_verify(email="user@example.com", password="ValidPassword123")
         assert login_success is True
 
-    # TC_Login_08: Click 'Forgot Password' and assert redirect to password recovery page.
+    # TC_LOGIN_002: Enter invalid credentials and verify error message for invalid credentials.
     @pytest.mark.asyncio
-    async def test_forgot_password_redirect(self):
+    async def test_invalid_credentials_error_message(self):
         driver = ... # Provide Selenium WebDriver instance
         base_url = ... # Provide base URL
         login_page = LoginPage(driver, base_url)
         login_page.navigate_to_login()
-        login_page.click_forgot_password()
-        assert login_page.is_on_password_recovery_page() is True
+        login_page.login_with_credentials(email="wronguser@example.com", password="WrongPassword")
+        assert login_page.verify_error_message("Invalid credentials") is True
 
-    # TC_Login_09: Enter 255-character email and valid password, assert fields accept max input, login, assert success.
+    # TC_LOGIN_003: Leave email and password fields empty and verify error message for empty fields.
     @pytest.mark.asyncio
-    async def test_max_length_email_and_password_login(self):
+    async def test_empty_fields_error_message(self):
         driver = ... # Provide Selenium WebDriver instance
         base_url = ... # Provide base URL
         login_page = LoginPage(driver, base_url)
         login_page.navigate_to_login()
-        max_length_email = "a" * 247 + "@e.com"  # 255 chars total
-        valid_password = "ValidPassword123"
-        login_page.enter_max_length_credentials_and_login(email_or_username=max_length_email, password=valid_password)
-        assert login_page.verify_max_length_fields_accept_input(email_or_username=max_length_email) is True
-        assert login_page.is_login_successful() is True
+        login_page.login_with_credentials(email="", password="")
+        assert login_page.verify_error_message("Fields cannot be empty") is True
 
 class TestRuleConfiguration:
     @pytest.mark.asyncio
