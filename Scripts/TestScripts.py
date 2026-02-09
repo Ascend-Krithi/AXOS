@@ -55,3 +55,15 @@ class TestScripts(unittest.TestCase):
         )
         self.assertIn('success', result.lower(), f"Large metadata rule creation failed or not accepted: {result}")
         # Optionally, check performance (e.g., response time if available)
+
+    def test_TC_SCRUM158_09_submit_schema_with_malicious_metadata(self):
+        """
+        Test Case TC_SCRUM158_09:
+        - Prepare a schema with metadata containing a malicious script.
+        - Submit the schema and check for error response.
+        """
+        schema = '{"trigger":{"type":"manual"},"conditions":[{"type":"amount","operator":"==","value":1}],"actions":[{"type":"transfer","account":"I","amount":1}],"metadata":"<script>alert(\'hack\')</script>"}'
+        page = RuleConfigurationPage(self.driver)
+        error_message = page.submit_schema_with_malicious_metadata(schema)
+        self.assertIsNotNone(error_message, "Expected error message for malicious metadata, but got None.")
+        self.assertIn('error', error_message.lower(), f"Expected error indication, got: {error_message}")
