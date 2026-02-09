@@ -108,9 +108,21 @@ class TestLogin:
     # TC_LOGIN_010: Case sensitivity check for login credentials
     def test_TC_LOGIN_010_case_sensitivity(self):
         login_page = LoginPage(self.driver)
-        results = login_page.login_with_case_variations("USER@EXAMPLE.COM", "ValidPassword123")
-        error_message = results if isinstance(results, str) else None
-        if error_message:
-            assert "Login failed" in error_message or "Login succeeded" in error_message, f"Unexpected error message: {error_message}"
-        else:
-            assert results == "Login succeeded.", f"Expected login success, got: {results}"
+        results = login_page.test_case_sensitivity("USER@EXAMPLE.COM", "ValidPassword123")
+        for variant, outcome in results.items():
+            if variant == "USER@EXAMPLE.COM":
+                assert outcome["login_success"], f"Exact case variant should succeed, got error: {outcome['error_message']}"
+            else:
+                assert not outcome["login_success"], f"Variant {variant} should fail, got success. Error: {outcome['error_message']}"
+
+    def test_TC_LOGIN_003_negative(self):
+        login_page = LoginPage(self.driver)
+        # TC_LOGIN_003: Leave email/username empty, enter valid password, expect 'Email/Username required' error.
+        result = login_page.validate_missing_email_error("ValidPass123")
+        assert result, "Error message 'Email/Username required' was not displayed as expected."
+
+    def test_TC_LOGIN_004_negative(self):
+        login_page = LoginPage(self.driver)
+        # TC_LOGIN_004: Enter valid email/username, leave password empty, expect 'Password required' error.
+        result = login_page.validate_missing_password_error("user@example.com")
+        assert result, "Error message 'Password required' was not displayed as expected."
