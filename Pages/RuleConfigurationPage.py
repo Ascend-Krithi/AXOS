@@ -15,40 +15,42 @@ class RuleConfigurationPage:
     - Locator definitions
     - Methods for interacting with rule fields
     - Methods for validating schema in UI and via API
-    - Methods for preparing invalid schemas
+    - Methods for preparing minimum valid and unsupported trigger schemas
     - Methods for negative test assertions
 
     Executive Summary:
-    This PageClass enables end-to-end automation for rule configuration including strict schema validation, negative testing, and API integration. It is fully compatible with downstream automation pipelines and adheres to code integrity standards.
+    This PageClass enables end-to-end automation for rule configuration including strict schema validation, extensibility testing, negative testing, and API integration. It is fully compatible with downstream automation pipelines and adheres to code integrity standards.
 
     Detailed Analysis:
-    All locator definitions are based on existing UI elements. Methods cover positive and negative scenarios as per test cases TC_SCRUM158_03 and TC_SCRUM158_04. The class supports both UI and API validation, ensuring comprehensive coverage.
+    All locator definitions are based on existing UI elements. Methods cover positive and negative scenarios as per test cases TC_SCRUM158_09 and TC_SCRUM158_10. The class supports both UI and API validation, ensuring comprehensive coverage.
 
     Implementation Guide:
     - Instantiate RuleConfigurationPage with a Selenium WebDriver instance.
     - Use provided methods to interact with rule fields and schema editor.
-    - Negative test methods validate error handling for invalid schemas.
+    - Test methods for minimum valid and unsupported trigger schemas.
     - API integration methods allow direct schema submission and validation.
 
     Quality Assurance Report:
-    - All fields and locators are validated against existing code.
+    - All fields and locators are validated against existing code and Locators.json.
     - Schema validation methods assert correct error messages and HTTP status codes.
-    - Negative tests ensure robustness against invalid input.
+    - Negative and extensibility tests ensure robustness against invalid input and new triggers.
 
     Troubleshooting Guide:
     - If a locator changes, update its definition in the class.
     - If schema validation fails unexpectedly, check for UI changes or API updates.
     - TimeoutExceptions indicate slow UI response; adjust WebDriverWait if needed.
+    - Unsupported trigger types may require backend extensibility; check API documentation.
 
     Future Considerations:
     - Extend methods for additional rule types or conditions as needed.
     - Integrate with advanced reporting frameworks for test results.
     - Refactor for support of multiple browsers or parallel execution.
+    - Monitor for new triggers and update schema preparation methods accordingly.
     """
     def __init__(self, driver):
         self.driver = driver
         self.wait = WebDriverWait(driver, 10)
-        # Locators
+        # Locators from Locators.json
         self.ruleIdInput = (By.ID, 'rule-id-field')
         self.ruleNameInput = (By.NAME, 'rule-name')
         self.saveRuleButton = (By.CSS_SELECTOR, "button[data-testid='save-rule-btn']")
@@ -132,67 +134,68 @@ class RuleConfigurationPage:
         response = requests.post(api_url, json=schema_json, headers=headers or {})
         return response.status_code, response.json()
 
-    def prepare_invalid_trigger_schema(self):
+    def prepare_minimum_valid_rule_schema(self):
         """
-        Prepares a rule schema with an invalid trigger value for testing.
+        Prepares a rule schema with only the minimum required fields for TC_SCRUM158_09.
         """
         return {
-            "trigger": "unknown_trigger",
+            "trigger": "balance_above",
             "conditions": [
                 {
                     "type": "amount_above",
-                    "balance_limit": 1000,
-                    "operator": "greater_than"
+                    "value": 1000
                 }
             ],
             "actions": [
                 {
                     "type": "transfer",
-                    "fixed-amount": 500,
-                    "target-account-id": "ACC123"
+                    "amount": 100
                 }
             ]
         }
 
-    def prepare_condition_missing_params_schema(self):
+    def prepare_unsupported_trigger_schema(self):
         """
-        Prepares a rule schema with a condition missing required parameters for testing.
+        Prepares a rule schema with a new, unsupported trigger type for TC_SCRUM158_10.
         """
         return {
-            "trigger": "deposit",
+            "trigger": "future_trigger",
             "conditions": [
                 {
-                    "type": "amount_above"
-                    # missing balance_limit and operator
+                    "type": "amount_above",
+                    "value": 2000
                 }
             ],
             "actions": [
                 {
                     "type": "transfer",
-                    "fixed-amount": 500,
-                    "target-account-id": "ACC123"
+                    "amount": 150
                 }
             ]
         }
 
-    def test_invalid_trigger_schema(self, api_url, headers=None):
+    def test_TC_SCRUM158_09_minimum_rule_schema(self, api_url, headers=None):
         """
-        Test case: Prepare invalid trigger schema, validate, submit, and verify API returns 400 Bad Request.
+        Test case TC_SCRUM158_09: Prepare minimum rule schema, validate, submit, and verify rule creation.
         """
-        schema = self.prepare_invalid_trigger_schema()
+        schema = self.prepare_minimum_valid_rule_schema()
         is_valid, error_msg = self.validate_rule_schema(str(schema))
-        assert not is_valid, f"Schema should be invalid but validation passed. Error: {error_msg}"
+        assert is_valid, f"Schema should be valid but validation failed. Error: {error_msg}"
         status_code, response = self.submit_rule_schema_api(schema, api_url, headers)
-        assert status_code == 400, f"API should return 400 Bad Request, got {status_code}. Response: {response}"
-        assert 'invalid value' in str(response), "Expected error about invalid value in response."
+        assert status_code == 201, f"API should return 201 Created, got {status_code}. Response: {response}"
+        assert 'ruleId' in response, "Expected ruleId in response for successful creation."
 
-    def test_condition_missing_params_schema(self, api_url, headers=None):
+    def test_TC_SCRUM158_10_unsupported_trigger(self, api_url, headers=None):
         """
-        Test case: Prepare condition missing params schema, validate, submit, and verify API returns 400 Bad Request.
+        Test case TC_SCRUM158_10: Prepare schema with unsupported trigger, validate, submit, and verify extensibility/error.
         """
-        schema = self.prepare_condition_missing_params_schema()
+        schema = self.prepare_unsupported_trigger_schema()
         is_valid, error_msg = self.validate_rule_schema(str(schema))
-        assert not is_valid, f"Schema should be invalid but validation passed. Error: {error_msg}"
-        status_code, response = self.submit_rule_schema_api(schema, api_url, headers)
-        assert status_code == 400, f"API should return 400 Bad Request, got {status_code}. Response: {response}"
-        assert 'incomplete condition' in str(response), "Expected error about incomplete condition in response."
+        # Schema may be valid if UI allows extensibility, else invalid
+        if is_valid:
+            status_code, response = self.submit_rule_schema_api(schema, api_url, headers)
+            # API should reject unsupported trigger
+            assert status_code in [400, 422], f"API should return 400/422 for unsupported trigger, got {status_code}. Response: {response}"
+            assert 'unsupported trigger' in str(response).lower() or 'error' in str(response).lower(), "Expected error about unsupported trigger in response."
+        else:
+            assert 'unsupported trigger' in error_msg.lower() or 'invalid' in error_msg.lower(), "Expected error about unsupported trigger in validation message."
