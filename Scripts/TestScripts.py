@@ -18,8 +18,6 @@ class TestRuleConfiguration(unittest.TestCase):
         # Clean up WebDriver
         self.driver.quit()
 
-    # Existing tests...
-
     # --- Appended for TC_SCRUM158_01 ---
     def test_TC_SCRUM158_01_create_and_store_rule(self):
         ...
@@ -39,3 +37,20 @@ class TestRuleConfiguration(unittest.TestCase):
         Acceptance criteria: rule is accepted and created successfully.
         """
         self.rule_page.create_rule_TC_SCRUM158_07()
+
+    # --- Appended for TC_SCRUM158_03 ---
+    def test_TC_SCRUM158_03_recurring_interval_rule(self):
+        """
+        TC_SCRUM158_03: Create a rule with a recurring interval trigger (weekly), amount >= 1000, transfers 1000 to account C. Verify the rule is accepted and scheduled for recurring evaluation, set for weekly execution.
+        Acceptance criteria: rule is accepted and scheduled for recurring evaluation, set for weekly execution.
+        """
+        result = self.rule_page.create_rule_TC_SCRUM158_03()
+        self.assertTrue("scheduled" in result.lower() or "weekly" in result.lower(), "Rule not scheduled for weekly execution")
+
+    # --- Appended for TC_SCRUM158_04 ---
+    def test_TC_SCRUM158_04_missing_trigger_field(self):
+        """
+        TC_SCRUM158_04: Prepare a schema missing the 'trigger' field, submit, and verify error for missing required field. Acceptance criteria: Schema is rejected with error indicating missing required field, rule is not created.
+        """
+        error_msg = self.rule_page.create_rule_TC_SCRUM158_04()
+        self.assertTrue("trigger" in error_msg.lower() or "required" in error_msg.lower(), "Missing required field error not shown")
