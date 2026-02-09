@@ -1,4 +1,3 @@
-
 import pytest
 from selenium import webdriver
 from Pages.LoginPage import LoginPage
@@ -7,7 +6,6 @@ from Pages.DashboardPage import DashboardPage
 class TestLogin:
     def setup_method(self):
         self.driver = webdriver.Chrome()
-        self.driver.get('https://your-app-url.com')
         self.login_page = LoginPage(self.driver)
         self.dashboard_page = DashboardPage(self.driver)
 
@@ -23,49 +21,43 @@ class TestLogin:
         # Stub - already present
         pass
 
-    # New test method for TC_LOGIN_001: Standard valid login and dashboard redirection
     def test_login_valid_redirect_dashboard(self):
         """
-        TC_LOGIN_001: Standard valid login and dashboard redirection
+        TC_LOGIN_001: Positive login with valid credentials, redirect to dashboard
         Steps:
-        1. Enter valid email and password.
-        2. Click Login.
-        3. Verify dashboard is displayed.
+        1. Navigate to login page
+        2. Enter valid email and password
+        3. Click Login
+        4. Validate dashboard is displayed
         """
+        url = "https://your-app-url.com/login"
         email = "user@example.com"
         password = "ValidPassword123"
-        self.login_page.enter_email(email)
-        self.login_page.enter_password(password)
-        self.login_page.click_login()
-        assert self.dashboard_page.is_dashboard_displayed(), "Dashboard page should be displayed after valid login."
+        self.login_page.navigate_to_login_page(url)
+        self.login_page.login_with_credentials(email, password, remember_me=False)
+        assert self.dashboard_page.is_on_dashboard(), "User should be redirected to dashboard after valid login"
 
-    # New test method for TC_Login_07: Login without 'Remember Me', verify session expiration after browser reopen
     def test_login_without_remember_me_session_expiry(self):
         """
-        TC_Login_07: Login without 'Remember Me', verify session expiration after browser reopen
+        TC_Login_07: Login without 'Remember Me', session expiration after browser reopen
         Steps:
-        1. Enter valid email and password.
-        2. Uncheck 'Remember Me'.
-        3. Click Login.
-        4. Verify dashboard is displayed.
-        5. Close browser and reopen.
-        6. Navigate to dashboard URL.
-        7. Verify session expired and redirected to login.
+        1. Navigate to login page
+        2. Enter valid credentials without selecting 'Remember Me'
+        3. Click Login
+        4. Close and reopen browser; navigate to site
+        5. Validate session expired (redirect to login)
         """
+        url = "https://your-app-url.com/login"
         email = "user@example.com"
         password = "ValidPassword123"
-        self.login_page.enter_email(email)
-        self.login_page.enter_password(password)
-        self.login_page.uncheck_remember_me()
-        self.login_page.click_login()
-        assert self.dashboard_page.is_dashboard_displayed(), "Dashboard page should be displayed after login without 'Remember Me'."
+        self.login_page.navigate_to_login_page(url)
+        self.login_page.login_with_credentials(email, password, remember_me=False)
+        assert self.dashboard_page.is_on_dashboard(), "User should be redirected to dashboard after login"
 
         # Simulate browser close and reopen
         self.driver.quit()
         self.driver = webdriver.Chrome()
-        self.driver.get('https://your-app-url.com/dashboard')
-        # Re-initialize page objects with new driver
         self.login_page = LoginPage(self.driver)
         self.dashboard_page = DashboardPage(self.driver)
-        # Session should be expired, so login page should be displayed
-        assert self.login_page.is_login_page_displayed(), "Session should expire after browser restart without 'Remember Me'. User should be redirected to login page."
+        self.driver.get("https://your-app-url.com/dashboard")
+        assert self.dashboard_page.is_session_expired(), "Session should expire after browser restart without 'Remember Me'. User should be redirected to login page."
