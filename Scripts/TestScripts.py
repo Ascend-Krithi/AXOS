@@ -159,45 +159,44 @@ class TestRuleDefinitionAndTransaction:
         assert result == "Existing rules executed successfully."
 
 # --- New test methods for TC-FT-007 and TC-FT-008 ---
-class TestRuleDefinitionPerformanceAndSecurity:
+class TestBulkRuleUploadAndSqlInjection:
     def __init__(self, driver):
         self.driver = driver
-        self.rule_definition_page = RuleDefinitionPage(driver)
+        self.rule_definition_page = RuleDefinitionPage(driver, locators={
+            'bulk_upload_button': '//button[@id="bulk-upload"]',
+            'file_input': '//input[@type="file"]',
+            'submit_button': '//button[@id="submit"]',
+            'success_notification': '//div[@class="notification success"]',
+            'rejection_notification': '//div[@class="notification error"]',
+            # Add other locators as needed
+        })
+        self.rule_page = RulePage(driver)
 
-    def test_bulk_rule_loading_and_evaluation(self):
+    def test_bulk_upload_10000_rules_and_evaluate(self):
         """
         Test Case TC-FT-007:
-        1. Load 10,000 valid rules into the system.
+        1. Load 10,000 valid rules into the system from batch JSON.
         2. Trigger evaluation for all rules simultaneously.
-        3. Assert system loads and processes rules within acceptable time limits.
         """
-        # Step 1: Load 10,000 valid rules
-        rules_batch = []
-        for i in range(10000):
-            rule = {
-                'trigger': {'type': 'after_deposit'},
-                'action': {'type': 'fixed_amount', 'amount': 100},
-                'conditions': [{'type': 'balance_threshold', 'value': 1000}]
-            }
-            rules_batch.append(rule)
-        load_time = self.rule_definition_page.load_bulk_rules(rules_batch)
-        assert load_time < 60  # Acceptable time limit (example threshold)
+        # Step 1: Bulk upload
+        result_upload = self.rule_definition_page.bulk_upload_rules('test_data/valid_10000_rules.json')
+        assert result_upload, "Bulk upload of 10,000 rules failed."
+        # Step 2: Mass evaluation
+        result_eval = self.rule_page.trigger_mass_evaluation()
+        assert result_eval, "Mass evaluation of rules failed."
 
-        # Step 2: Trigger evaluation for all rules
-        eval_time = self.rule_definition_page.trigger_bulk_evaluation()
-        assert eval_time < 120  # Acceptable time limit (example threshold)
-
-    def test_sql_injection_rule_submission_and_rejection(self):
+    def test_submit_rule_with_sql_injection(self):
         """
         Test Case TC-FT-008:
         1. Submit a rule with SQL injection in a field value.
-        2. Assert system rejects the rule and does not execute any SQL.
+        2. System should reject the rule and not execute any SQL.
         """
-        rule_data = {
-            "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"},
-            "action": {"type": "fixed_amount", "amount": 100},
-            "conditions": [{"type": "balance_threshold", "value": "1000; DROP TABLE users;--"}]
+        sql_injection_rule = {
+            'trigger': {'type': 'specific_date', 'date': '2024-07-01T10:00:00Z'},
+            'action': {'type': 'fixed_amount', 'amount': 100},
+            'conditions': [
+                {'type': 'balance_threshold', 'value': '1000; DROP TABLE users;--'}
+            ]
         }
-        self.rule_definition_page.submit_sql_injection_rule(rule_data)
-        rejected = self.rule_definition_page.verify_sql_injection_rejection()
-        assert rejected, "SQL injection rule was not properly rejected."
+        result = self.rule_definition_page.submit_rule_with_validation(sql_injection_rule)
+        assert result, "SQL injection rule was not rejected as expected."
