@@ -115,3 +115,36 @@ async def test_TC_LOGIN_008_forgot_password_flow(browser):
     login_page.submit_forgot_password(email)
     confirmation_msg = login_page.get_reset_confirmation_message()
     assert confirmation_msg.strip() != "", "Password reset confirmation message should be displayed."
+
+# --- New test methods for TC_Login_10 and TC_LOGIN_004 ---
+
+@pytest.mark.asyncio
+async def test_TC_Login_10_max_length_password(browser):
+    """
+    TC_Login_10: Navigate to login page, enter valid email and max-length password (128 chars), click login, validate login success.
+    """
+    login_page = LoginPage(browser)
+    url = "https://example.com/login"
+    email = "user@example.com"
+    password = "A" * 128
+
+    login_page.navigate_to_login_page(url)
+    login_page.enter_credentials(email, password)
+    login_page.click_login()
+    assert login_page.validate_login_success(), "Login should be successful with max-length password."
+
+@pytest.mark.asyncio
+async def test_TC_LOGIN_004_max_length_email_and_password(browser):
+    """
+    TC_LOGIN_004: Navigate to login page, enter max-length email (254 chars) and password (64 chars), click login, validate login success or error.
+    """
+    login_page = LoginPage(browser)
+    url = "https://example.com/login"
+    email = "u" * 242 + "@example.com"  # 254 chars
+    password = "V" * 64  # 64 chars
+
+    login_page.navigate_to_login_page(url)
+    login_page.enter_credentials(email, password)
+    login_page.click_login()
+    # Validate either login success or error
+    assert login_page.validate_login_success() or login_page.validate_login_error() != "", "Must show success or error for max-length inputs."
