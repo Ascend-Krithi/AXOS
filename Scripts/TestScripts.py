@@ -39,6 +39,31 @@ class TestLoginFunctionality:
         login_page.login_with_credentials(email="user@example.com", password="")
         assert login_page.verify_error_message("Password required") is True
 
+    # TC_Login_05: Leave both email and password fields empty, verify both error messages.
+    @pytest.mark.asyncio
+    async def test_empty_fields(self):
+        driver = ... # Provide Selenium WebDriver instance
+        base_url = ... # Provide base URL
+        login_page = LoginPage(driver, base_url)
+        login_page.navigate_to_login()
+        login_page.login_with_credentials(email="", password="")
+        # Wait for error messages to appear
+        import time
+        time.sleep(1)
+        email_error = login_page.verify_error_message("Email required")
+        password_error = login_page.verify_error_message("Password required")
+        assert email_error is True
+        assert password_error is True
+
+    # TC_Login_06: Login with 'Remember Me', close and reopen browser, verify session persists.
+    @pytest.mark.asyncio
+    async def test_remember_me_persistence(self):
+        driver = ... # Provide Selenium WebDriver instance
+        base_url = ... # Provide base URL
+        login_page = LoginPage(driver, base_url)
+        result = login_page.test_remember_me_persistence(email="user@example.com", password="ValidPassword123")
+        assert result is True
+
 class TestRuleConfiguration:
     @pytest.mark.asyncio
     async def test_valid_rule_schema(self):
