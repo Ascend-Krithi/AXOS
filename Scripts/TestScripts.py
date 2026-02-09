@@ -65,3 +65,23 @@ class TestRuleConfiguration(unittest.TestCase):
         self.page.simulate_deposit(500)
         success_msg = self.page.get_success_message()
         self.assertIn("transfer of 50 units executed", success_msg, "Existing rule execution failed after currency_conversion rule test.")
+
+    def test_TC_SCRUM158_07_required_fields_schema_rule_creation(self):
+        """
+        TC_SCRUM158_07: Prepare a schema with only required fields (one trigger, one condition, one action).
+        Test Data: {"trigger":{"type":"manual"},"conditions":[{"type":"amount","operator":"==","value":1}],"actions":[{"type":"transfer","account":"G","amount":1}]}
+        Acceptance Criteria: Rule is accepted and created.
+        """
+        schema = {"trigger":{"type":"manual"},"conditions":[{"type":"amount","operator":"==","value":1}],"actions":[{"type":"transfer","account":"G","amount":1}]}
+        success_msg = self.page.create_rule_from_schema(schema)
+        self.assertIn("success", success_msg.lower())
+
+    def test_TC_SCRUM158_08_large_metadata_field_rule_creation(self):
+        """
+        TC_SCRUM158_08: Prepare a schema with a large metadata field (e.g., 10,000 characters).
+        Acceptance Criteria: Rule is accepted if within limits; performance is acceptable.
+        """
+        large_metadata = "x" * 10000
+        result = self.page.test_large_metadata_field(large_metadata)
+        self.assertIn("success", result['success'].lower())
+        self.assertLess(result['performance_sec'], 10, "Performance degraded for large metadata.")
