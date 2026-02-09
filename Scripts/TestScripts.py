@@ -120,3 +120,51 @@ class TestLogin:
         assert results['both_empty'], "Error message for both fields empty should be displayed."
         assert results['email_empty'], "Error message for email empty should be displayed."
         assert results['password_empty'], "Error message for password empty should be displayed."
+
+    def test_login_max_length_valid_credentials(self):
+        """
+        TC_Login_10: Login with valid email and password at maximum allowed length
+        Steps:
+        1. Navigate to login page
+        2. Enter valid email and password at maximum allowed length (user@example.com / 128-char password)
+        3. Click Login
+        Expected: Fields accept max input. User is logged in if credentials are valid.
+        """
+        url = "https://your-app-url.com/login"
+        email = "user@example.com"
+        password = "A" * 128
+        self.login_page.navigate_to_login_page(url)
+        # Validate max length email and password fields
+        email_ok = self.login_page.enter_max_length_email(email)
+        password_ok = self.login_page.enter_max_length_password(password)
+        assert email_ok, "Email field should accept maximum allowed length."
+        assert password_ok, "Password field should accept maximum allowed length."
+        # Login with max length credentials
+        login_result = self.login_page.login_with_max_length_credentials(email, password)
+        assert login_result['success'], "User should be logged in with valid max length credentials."
+        assert self.dashboard_page.is_on_dashboard(), "User should be redirected to dashboard after login with max length credentials."
+
+    def test_login_max_length_boundary(self):
+        """
+        TC_LOGIN_004: Login with email and password at maximum allowed character length
+        Steps:
+        1. Navigate to login page
+        2. Enter email/username and password at maximum allowed character length (userwithverylongemailaddress@example.com [254 chars] / VeryLongPassword123! [64 chars])
+        3. Click Login
+        Expected: Fields accept input up to maximum length. User is logged in if credentials are valid; error if invalid.
+        """
+        url = "https://your-app-url.com/login"
+        email = "u" * (254 - len("@example.com")) + "@example.com"
+        password = "V" * 64
+        self.login_page.navigate_to_login_page(url)
+        # Validate max length email and password fields
+        email_ok = self.login_page.enter_max_length_email(email)
+        password_ok = self.login_page.enter_max_length_password(password)
+        assert email_ok, "Email field should accept maximum allowed length (254 chars)."
+        assert password_ok, "Password field should accept maximum allowed length (64 chars)."
+        # Login with max length credentials
+        login_result = self.login_page.login_with_max_length_credentials(email, password)
+        if login_result['success']:
+            assert self.dashboard_page.is_on_dashboard(), "User should be redirected to dashboard after login with max length credentials."
+        else:
+            assert login_result['error'], "Error message should be shown for invalid max length credentials."
