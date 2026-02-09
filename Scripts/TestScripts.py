@@ -125,3 +125,30 @@ class TestRuleConfiguration:
         schema_str = '{"type": "object", "properties": {}}'
         await self.rule_config_page.navigate()
         self.rule_config_page.submit_rule_unsupported_action(rule_id, rule_name, trigger_type, schema_str)
+
+    # --- TC-FT-009: Store and Verify Valid Rule with Specific Date ---
+    async def test_store_and_verify_valid_rule_specific_date(self):
+        rule_id = "TC-FT-009"
+        rule_name = "Valid Rule Specific Date"
+        date_str = "2024-07-01T10:00:00Z"
+        amount = 100
+        schema_str = '{"type": "object", "properties": {}}'
+        expected_rule = {
+            "trigger": {"type": "specific_date", "date": date_str},
+            "action": {"type": "fixed_amount", "amount": amount},
+            "conditions": []
+        }
+        await self.rule_config_page.navigate()
+        self.rule_config_page.define_and_store_valid_rule_specific_date(rule_id, rule_name, date_str, amount, schema_str)
+        self.rule_config_page.verify_rule_stored(rule_id, expected_rule)
+
+    # --- TC-FT-010: Unconditional Execution After Deposit ---
+    async def test_define_rule_after_deposit_empty_conditions_and_trigger(self):
+        rule_id = "TC-FT-010"
+        rule_name = "After Deposit Empty Conditions"
+        amount = 100
+        schema_str = '{"type": "object", "properties": {}}'
+        deposit_amount = 1000
+        await self.rule_config_page.navigate()
+        self.rule_config_page.define_rule_after_deposit_empty_conditions(rule_id, rule_name, amount, schema_str)
+        self.rule_config_page.trigger_rule_and_verify_unconditional_execution(deposit_amount)
