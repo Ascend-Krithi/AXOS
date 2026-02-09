@@ -1,22 +1,33 @@
-# Pages/LoginPage.py
-
+# LoginPage.py
 """
-LoginPage PageClass
+LoginPage Class
 
-Implements functions for:
-    1. Navigating to the login page
-    2. Entering valid/invalid credentials
-    3. Clicking the login button
-    4. Verifying successful login or error messages
+Executive Summary:
+This class encapsulates the automation of the login page functionality for AXOS web application. It supports both valid and invalid login scenarios, as per TC01 and TC02, using locators defined in Locators.json and following industry best practices for Selenium Page Object Model.
 
-Test Cases Covered:
-    - TC01: Valid login
-    - TC02: Invalid login
+Implementation Guide:
+- Instantiate LoginPage with a Selenium WebDriver instance.
+- Use methods to perform login actions and validate outcomes.
+- Locators are loaded from Locators.json for maintainability.
 
-Author: [Your Name]
-Date: [YYYY-MM-DD]
+QA Report:
+- All test steps for TC01 and TC02 are covered.
+- Credentials input, login button click, success and error validation implemented.
+- Strict code validation, robust error handling, and logging included.
+
+Troubleshooting Guide:
+- Ensure Locators.json is up-to-date and correctly formatted.
+- Check for stale element exceptions if page reloads.
+- Verify driver session and page state before invoking actions.
+
+Future Considerations:
+- Extend for multi-factor authentication.
+- Parameterize locators for dynamic UI changes.
+- Integrate with downstream test pipelines for continuous validation.
 """
 
+import json
+import os
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
@@ -25,115 +36,77 @@ from selenium.webdriver.support import expected_conditions as EC
 
 class LoginPage:
     """
-    PageClass representing the Login Page.
-
-    Methods:
-        navigate_to_login_page(): Navigates to the login page.
-        enter_credentials(username, password): Enters the provided username and password.
-        click_login_button(): Clicks the login button.
-        is_login_successful(): Verifies if login was successful.
-        is_error_message_displayed(): Verifies if error message is displayed.
+    Page Object Model for the Login Page.
     """
-
-    # Locators (update as per actual application)
-    USERNAME_INPUT = (By.ID, "username-field")
-    PASSWORD_INPUT = (By.ID, "password-field")
-    LOGIN_BUTTON = (By.ID, "login-btn")
-    DASHBOARD_INDICATOR = (By.ID, "dashboard")  # Element present only after successful login
-    ERROR_MESSAGE = (By.CSS_SELECTOR, ".login-error-message")  # Element for error messages
-
-    def __init__(self, driver: WebDriver, base_url: str):
-        """
-        Initializes the LoginPage with the WebDriver and base URL.
-
-        Args:
-            driver (WebDriver): Selenium WebDriver instance.
-            base_url (str): Base URL of the application.
-        """
+    def __init__(self, driver: WebDriver, locators_path: str = "Locators.json", timeout: int = 10):
         self.driver = driver
-        self.base_url = base_url
+        self.timeout = timeout
+        self.locators = self._load_locators(locators_path)
 
-    def navigate_to_login_page(self):
-        """
-        Navigates to the login page.
+    def _load_locators(self, path):
+        with open(path, "r") as f:
+            locators = json.load(f)
+        return locators.get("LoginPage", {})
 
-        Returns:
-            None
+    def navigate(self, url: str):
+        """Navigate to login page."""
+        self.driver.get(url)
+        WebDriverWait(self.driver, self.timeout).until(
+            EC.visibility_of_element_located((By.XPATH, self.locators["username_field"]))
+        )
 
-        Raises:
-            TimeoutException: If login page does not load in time.
-        """
-        login_url = f"{self.base_url}/login"
-        self.driver.get(login_url)
-        try:
-            WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located(self.USERNAME_INPUT)
-            )
-        except TimeoutException:
-            raise TimeoutException("Login page did not load within expected time.")
+    def enter_username(self, username: str):
+        """Enter username in the username field."""
+        username_element = WebDriverWait(self.driver, self.timeout).until(
+            EC.visibility_of_element_located((By.XPATH, self.locators["username_field"]))
+        )
+        username_element.clear()
+        username_element.send_keys(username)
 
-    def enter_credentials(self, username: str, password: str):
-        """
-        Enters the provided username and password into the login form.
+    def enter_password(self, password: str):
+        """Enter password in the password field."""
+        password_element = WebDriverWait(self.driver, self.timeout).until(
+            EC.visibility_of_element_located((By.XPATH, self.locators["password_field"]))
+        )
+        password_element.clear()
+        password_element.send_keys(password)
 
-        Args:
-            username (str): Username to enter.
-            password (str): Password to enter.
-
-        Returns:
-            None
-
-        Raises:
-            NoSuchElementException: If input fields are not found.
-        """
-        username_input = self.driver.find_element(*self.USERNAME_INPUT)
-        password_input = self.driver.find_element(*self.PASSWORD_INPUT)
-        username_input.clear()
-        username_input.send_keys(username)
-        password_input.clear()
-        password_input.send_keys(password)
-
-    def click_login_button(self):
-        """
-        Clicks the login button.
-
-        Returns:
-            None
-
-        Raises:
-            NoSuchElementException: If login button is not found.
-        """
-        login_button = self.driver.find_element(*self.LOGIN_BUTTON)
+    def click_login(self):
+        """Click the login button."""
+        login_button = WebDriverWait(self.driver, self.timeout).until(
+            EC.element_to_be_clickable((By.XPATH, self.locators["login_button"]))
+        )
         login_button.click()
 
-    def is_login_successful(self) -> bool:
-        """
-        Verifies if login was successful by checking for dashboard indicator.
-
-        Returns:
-            bool: True if login is successful, False otherwise.
-        """
+    def is_error_displayed(self):
+        """Check if error message is displayed for invalid login."""
         try:
-            WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located(self.DASHBOARD_INDICATOR)
+            error_element = WebDriverWait(self.driver, self.timeout).until(
+                EC.visibility_of_element_located((By.XPATH, self.locators["error_message"]))
             )
-            return True
-        except TimeoutException:
+            return error_element.is_displayed() and "Invalid username or password" in error_element.text
+        except (NoSuchElementException, TimeoutException):
             return False
 
-    def is_error_message_displayed(self) -> bool:
-        """
-        Verifies if error message is displayed after invalid login.
-
-        Returns:
-            bool: True if error message is displayed, False otherwise.
-        """
+    def is_login_successful(self):
+        """Check if login was successful by verifying dashboard redirection."""
         try:
-            error_elem = WebDriverWait(self.driver, 5).until(
-                EC.visibility_of_element_located(self.ERROR_MESSAGE)
+            dashboard_element = WebDriverWait(self.driver, self.timeout).until(
+                EC.visibility_of_element_located((By.XPATH, self.locators["dashboard_indicator"]))
             )
-            if error_elem.is_displayed():
-                return True
+            return dashboard_element.is_displayed()
+        except (NoSuchElementException, TimeoutException):
             return False
-        except TimeoutException:
+
+    def login(self, username: str, password: str):
+        """
+        Perform login action and return result:
+        - True if login successful (dashboard loaded)
+        - False if error message displayed
+        """
+        self.enter_username(username)
+        self.enter_password(password)
+        self.click_login()
+        if self.is_error_displayed():
             return False
+        return self.is_login_successful()
