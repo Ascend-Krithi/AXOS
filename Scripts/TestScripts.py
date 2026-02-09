@@ -3,38 +3,36 @@ from Pages.LoginPage import LoginPage
 from Pages.RuleConfigurationPage import RuleConfigurationPage
 
 class TestLoginFunctionality:
-    def __init__(self, page, base_url):
+    def __init__(self, page):
         self.page = page
-        self.base_url = base_url
-        self.login_page = LoginPage(page, base_url)
+        self.login_page = LoginPage(page)
 
     async def test_empty_fields_validation(self):
-        await self.login_page.go_to_login_page()
-        await self.login_page.enter_username('')
-        await self.login_page.enter_password('')
-        await self.login_page.click_login()
-        assert await self.login_page.verify_error_message('Mandatory fields are required')
+        await self.login_page.navigate()
+        await self.login_page.submit_login('', '')
+        assert await self.login_page.get_error_message() == 'Mandatory fields are required'
 
     async def test_remember_me_functionality(self):
-        await self.login_page.go_to_login_page()
-        await self.login_page.enter_username('')
-        # Add remember me functionality test logic
+        await self.login_page.navigate()
+        await self.login_page.fill_email('')
 
-    async def test_valid_login_redirects_to_dashboard(self):
-        """
-        TC_Login_01: Valid login redirects to dashboard
-        """
-        await self.login_page.go_to_login_page()
-        await self.login_page.login('user@example.com', 'ValidPassword123')
-        assert await self.login_page.verify_dashboard_redirect()
+    async def test_tc_login_01(self):
+        # TC_Login_01: Valid login
+        url = 'https://example.com/login'  # Replace with actual login URL
+        await self.login_page.navigate_to_login(url)
+        await self.login_page.enter_email('user@example.com')
+        await self.login_page.enter_password('ValidPassword123')
+        await self.login_page.click_login()
+        assert await self.login_page.is_dashboard_displayed(), 'Dashboard should be displayed after valid login.'
 
-    async def test_invalid_login_shows_error_message(self):
-        """
-        TC_Login_02: Invalid login shows error message
-        """
-        await self.login_page.go_to_login_page()
-        await self.login_page.login('wronguser@example.com', 'WrongPassword')
-        assert await self.login_page.verify_error_message('Invalid credentials')
+    async def test_tc_login_02(self):
+        # TC_Login_02: Invalid login
+        url = 'https://example.com/login'  # Replace with actual login URL
+        await self.login_page.navigate_to_login(url)
+        await self.login_page.enter_email('wronguser@example.com')
+        await self.login_page.enter_password('WrongPassword')
+        await self.login_page.click_login()
+        assert await self.login_page.is_error_message_displayed(), 'Error message should be displayed for invalid login.'
 
 class TestRuleConfigurationNegativeCases:
     def __init__(self, page):
