@@ -88,3 +88,35 @@ class TestLogin:
         password = "ValidPassword123"
         self.login_page.navigate_to_login_page(url)
         assert self.login_page.validate_email_max_length(255, email, password), "Email field should accept maximum input length of 255 characters"
+
+    def test_login_invalid_credentials_negative(self):
+        """
+        TC_LOGIN_002: Negative login scenario with invalid credentials.
+        Steps:
+        1. Navigate to login page
+        2. Enter invalid email/username or password (wronguser@example.com / WrongPassword)
+        3. Click Login
+        Expected: User remains on login page. Error message for invalid credentials is displayed.
+        """
+        url = "https://your-app-url.com/login"
+        invalid_email = "wronguser@example.com"
+        invalid_password = "WrongPassword"
+        self.login_page.navigate_to_login_page(url)
+        result = self.login_page.login_with_invalid_credentials(invalid_email, invalid_password)
+        assert result, "Error message for invalid credentials should be displayed and user should remain on login page."
+
+    def test_login_empty_fields_negative(self):
+        """
+        TC_LOGIN_003: Negative login scenario with empty fields.
+        Steps:
+        1. Navigate to login page
+        2. Leave email/username and/or password fields empty ('' / '')
+        3. Click Login
+        Expected: User remains on login page. Error or validation message for empty fields is displayed.
+        """
+        url = "https://your-app-url.com/login"
+        self.login_page.navigate_to_login_page(url)
+        results = self.login_page.login_with_empty_fields()
+        assert results['both_empty'], "Error message for both fields empty should be displayed."
+        assert results['email_empty'], "Error message for email empty should be displayed."
+        assert results['password_empty'], "Error message for password empty should be displayed."
