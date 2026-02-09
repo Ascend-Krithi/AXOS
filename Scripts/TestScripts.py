@@ -1,4 +1,3 @@
-
 import pytest
 import asyncio
 
@@ -72,27 +71,23 @@ class TestRuleConfiguration:
         assert 'error' in result
         assert 'missing' in result['error'].lower() or 'incomplete' in result['error'].lower()
 
-    # TC_SCRUM158_07: Create rule with max conditions and actions
     @pytest.mark.asyncio
-    async def test_create_rule_with_max_conditions_and_actions(self):
+    async def test_max_conditions_actions(self):
         rule_page = RuleConfigurationPage()
-        rule_id = "R_MAX_001"
-        rule_name = "Rule with Max Conditions and Actions"
-        conditions = [
-            {"condition_type": "balance_above", "balance_threshold": 1000.0, "source": "providerA", "operator": "greater_than"} for _ in range(10)
-        ]
-        actions = [
-            {"action_type": "transfer", "amount": 100.0, "percentage": None, "dest_account": f"ACC{str(i+1).zfill(3)}"} for i in range(10)
-        ]
-        result = await rule_page.create_rule_with_max_conditions_and_actions(rule_id, rule_name, conditions, actions)
-        assert result is True
+        # TC_SCRUM158_07: Prepare a rule schema with maximum supported conditions and actions (10 each), validate schema, submit, and check persistence.
+        result = await rule_page.test_max_conditions_actions()
+        assert result['valid'] is True
+        assert result['submitted'] is True
+        assert result['persisted'] is True
+        assert len(result['schema']['conditions']) == 10
+        assert len(result['schema']['actions']) == 10
 
-    # TC_SCRUM158_08: Create rule with empty conditions and actions
     @pytest.mark.asyncio
-    async def test_create_rule_with_empty_conditions_and_actions(self):
+    async def test_empty_conditions_actions(self):
         rule_page = RuleConfigurationPage()
-        rule_id = "R_EMPTY_001"
-        rule_name = "Rule with Empty Conditions and Actions"
-        result_msg = await rule_page.create_rule_with_empty_conditions_and_actions(rule_id, rule_name)
-        assert isinstance(result_msg, str)
-        assert "valid" in result_msg.lower() or "error" in result_msg.lower()
+        # TC_SCRUM158_08: Prepare a rule schema with empty 'conditions' and 'actions', validate schema, submit, and return validity and error info.
+        result = await rule_page.test_empty_conditions_actions()
+        assert result['valid'] is False
+        assert result['submitted'] is False or result['persisted'] is False
+        assert 'error' in result
+        assert 'conditions' in result['error'].lower() or 'actions' in result['error'].lower()
