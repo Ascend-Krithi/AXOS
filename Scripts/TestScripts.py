@@ -168,3 +168,50 @@ class TestLogin:
             assert self.dashboard_page.is_on_dashboard(), "User should be redirected to dashboard after login with max length credentials."
         else:
             assert login_result['error'], "Error message should be shown for invalid max length credentials."
+
+    def test_login_special_characters(self):
+        """
+        TC_LOGIN_005: Login with email and password containing special characters
+        Steps:
+        1. Navigate to login page
+        2. Enter email/username and password containing special characters (special_user!@#$/example.com / P@$$w0rd!#)
+        3. Click Login
+        Expected: Fields accept input. User is logged in if credentials are valid; error if invalid.
+        """
+        url = "https://your-app-url.com/login"
+        email = "special_user!@#$/example.com"
+        password = "P@$$w0rd!#"
+        self.login_page.navigate(url)
+        assert self.login_page.fields_accept_special_characters(email, password), "Fields should accept special characters as input."
+        self.login_page.login(email, password)
+        # Check login result: either user is logged in or error message is shown
+        if self.dashboard_page.is_user_logged_in():
+            assert True, "User should be logged in with valid credentials containing special characters."
+        else:
+            error = self.login_page.get_error_message()
+            assert error is not None, "Error message should be displayed for invalid credentials with special characters."
+
+    def test_remember_me_session_persistence(self):
+        """
+        TC_LOGIN_006: Login with 'Remember Me' checked and validate session persistence after browser reopen
+        Steps:
+        1. Navigate to login page
+        2. Enter valid email/username and password. Select 'Remember Me' checkbox (user@example.com / ValidPassword123)
+        3. Click Login
+        4. Close and reopen browser
+        Expected: 'Remember Me' checkbox is checked. User remains logged in; session persists.
+        """
+        url = "https://your-app-url.com/login"
+        email = "user@example.com"
+        password = "ValidPassword123"
+        self.login_page.navigate(url)
+        self.login_page.login(email, password, remember_me=True)
+        assert self.login_page.is_remember_me_checked(), "'Remember Me' checkbox should be checked."
+        assert self.dashboard_page.is_user_logged_in(), "User should be logged in after clicking Login with 'Remember Me' checked."
+        # Simulate browser close and reopen
+        self.driver.quit()
+        self.driver = webdriver.Chrome()
+        self.login_page = LoginPage(self.driver)
+        self.dashboard_page = DashboardPage(self.driver)
+        self.driver.get("https://your-app-url.com/dashboard")
+        assert self.dashboard_page.session_persists(), "Session should persist after browser restart when 'Remember Me' is checked."
