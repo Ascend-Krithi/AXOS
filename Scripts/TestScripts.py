@@ -84,3 +84,32 @@ class TestLoginFunctionality:
         rule_engine = RuleEnginePage(self.page)
         response = rule_engine.submit_rule(rule)
         assert response['error'] == 'Unsupported action type'
+
+    async def test_deposit_percentage_rule(self):
+        # TC-FT-005: Define a rule for 10% of deposit action and simulate deposit of 500 units
+        rule = {
+            'trigger': {'type': 'after_deposit'},
+            'action': {'type': 'percentage_of_deposit', 'percentage': 10},
+            'conditions': []
+        }
+        rule_engine = RuleEnginePage(self.page)
+        rule_engine.define_rule(rule)
+        assert rule_engine.is_rule_accepted()
+        rule_engine.simulate_deposit(500)
+        assert rule_engine.verify_transfer_action(50)
+
+    async def test_currency_conversion_rule_and_existing_rules(self):
+        # TC-FT-006: Define a currency conversion rule, check acceptance/rejection, verify existing rules
+        rule = {
+            'trigger': {'type': 'currency_conversion', 'currency': 'EUR'},
+            'action': {'type': 'fixed_amount', 'amount': 100},
+            'conditions': []
+        }
+        rule_engine = RuleEnginePage(self.page)
+        rule_engine.define_currency_conversion_rule(rule)
+        if rule_engine.is_rule_accepted():
+            assert True
+        else:
+            error = rule_engine.get_error_message()
+            assert error is not None and 'currency_conversion' in error
+        assert rule_engine.verify_existing_rules_function()
