@@ -190,5 +190,21 @@ class TestScripts(unittest.TestCase):
         self.assertTrue(simulation_result['actions_triggered'], 'Actions not triggered as expected')
         self.assertIn('details', simulation_result)
 
+    def test_TC_SCRUM158_05_invalid_trigger_value(self):
+        """
+        TC_SCRUM158_05: Prepare a rule schema with an invalid trigger value, submit via API, and assert that API returns 400 Bad Request with error about invalid value.
+        """
+        page = RuleConfigurationPage(driver=None)
+        error_json = page.submit_invalid_trigger_schema_api()
+        self.assertIn('invalid value', error_json.get('error', '').lower(), 'API did not return error about invalid value')
+
+    def test_TC_SCRUM158_06_incomplete_condition(self):
+        """
+        TC_SCRUM158_06: Prepare a rule schema with a condition missing required parameters, submit via API, and assert that API returns 400 Bad Request with error about incomplete condition.
+        """
+        page = RuleConfigurationPage(driver=None)
+        error_json = page.submit_incomplete_condition_schema_api()
+        self.assertIn('incomplete condition', error_json.get('error', '').lower(), 'API did not return error about incomplete condition')
+
 if __name__ == '__main__':
     unittest.main()
