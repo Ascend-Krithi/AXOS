@@ -14,9 +14,6 @@ class TestLogin(unittest.TestCase):
     # Existing test methods...
 
     def test_TC_LOGIN_002_invalid_credentials(self):
-        """
-        TC_LOGIN_002: Navigate to login page, enter invalid credentials, click login, assert error message for invalid credentials is displayed.
-        """
         self.login_page.enter_username('wronguser@example.com')
         self.login_page.enter_password('WrongPassword')
         self.login_page.click_login()
@@ -26,10 +23,6 @@ class TestLogin(unittest.TestCase):
         )
 
     def test_TC_LOGIN_003_empty_fields(self):
-        """
-        TC_LOGIN_003: Navigate to login page, leave email/username and/or password fields empty, click login, assert error or validation message for empty fields is displayed.
-        """
-        # Test with both fields empty
         self.login_page.enter_username('')
         self.login_page.enter_password('')
         self.login_page.click_login()
@@ -37,7 +30,6 @@ class TestLogin(unittest.TestCase):
             self.login_page.is_error_displayed(),
             "Error or validation message for empty fields was not displayed."
         )
-        # Optionally, test with only username empty
         self.login_page.enter_username('')
         self.login_page.enter_password('SomePassword')
         self.login_page.click_login()
@@ -45,7 +37,6 @@ class TestLogin(unittest.TestCase):
             self.login_page.is_error_displayed(),
             "Error or validation message for empty username was not displayed."
         )
-        # Optionally, test with only password empty
         self.login_page.enter_username('someuser@example.com')
         self.login_page.enter_password('')
         self.login_page.click_login()
@@ -55,18 +46,12 @@ class TestLogin(unittest.TestCase):
         )
 
     def test_TC_Login_10_max_length_login(self):
-        """
-        TC_Login_10: Navigate to login page, enter valid email and password at maximum allowed length, click login, assert fields accept max input and user is logged in if credentials are valid.
-        """
-        # Generate maximum length credentials
         max_username = 'user_' + 'a' * (255 - 5)
         max_password = 'b' * 128
-        # Validate fields accept max length input
         self.assertTrue(
             self.login_page.validate_max_length_input(username_field_max_length=255, password_field_max_length=128),
             "Username or password field did not accept maximum allowed input length."
         )
-        # Attempt login with valid max-length credentials
         self.login_page.enter_username(max_username)
         self.login_page.enter_password(max_password)
         self.login_page.click_login()
@@ -76,18 +61,12 @@ class TestLogin(unittest.TestCase):
         )
 
     def test_TC_LOGIN_004_max_length_login(self):
-        """
-        TC_LOGIN_004: Navigate to login page, enter email/username and password at maximum allowed character length (254 chars for email, 64 chars for password), click login, assert fields accept input up to maximum length and user is logged in if credentials are valid; error if invalid.
-        """
-        # Generate maximum length credentials
-        max_email = 'a' * (254 - 12) + '@example.com'  # Ensure valid email format
+        max_email = 'a' * (254 - 12) + '@example.com'
         max_password = 'X' * 64
-        # Validate fields accept max length input
         self.assertTrue(
             self.login_page.validate_max_length_input(username_field_max_length=254, password_field_max_length=64),
             "Username or password field did not accept maximum allowed input length for TC_LOGIN_004."
         )
-        # Attempt login with valid max-length credentials
         self.login_page.enter_username(max_email)
         self.login_page.enter_password(max_password)
         self.login_page.click_login()
@@ -101,6 +80,46 @@ class TestLogin(unittest.TestCase):
                 self.login_page.is_error_displayed(),
                 "Error message was not displayed for invalid credentials at maximum length."
             )
+
+    def test_TC_LOGIN_007_remember_me_session_expiration(self):
+        """
+        TC_LOGIN_007: Valid login, 'Remember Me' unchecked, session expiration validated after browser restart.
+        Steps:
+        1. Navigate to login page.
+        2. Enter valid email/username and password. Do not select 'Remember Me'.
+        3. Click the Login button.
+        4. Close and reopen the browser.
+        5. Verify user is logged out; session does not persist.
+        """
+        username = 'user@example.com'
+        password = 'ValidPassword123'
+        # Step 2 & 3
+        self.login_page.login(username, password, remember_me=False)
+        # Step 4: Close and reopen browser
+        self.driver.quit()
+        self.driver = webdriver.Chrome()
+        self.driver.get('https://example.com/login')
+        self.login_page = LoginPage(self.driver)
+        # Step 5: Verify session expired
+        self.assertTrue(
+            self.login_page.verify_session_expired(),
+            "Session did not expire as expected after browser restart when 'Remember Me' was not selected."
+        )
+
+    def test_TC_LOGIN_008_forgot_password_flow(self):
+        """
+        TC_LOGIN_008: Forgot password flow, reset email submission, confirmation message validation.
+        Steps:
+        1. Navigate to login page.
+        2. Click on 'Forgot Password' link.
+        3. Enter registered email/username and submit.
+        4. Verify password reset email is sent and confirmation message is displayed.
+        """
+        email = 'user@example.com'
+        self.assertTrue(
+            self.login_page.forgot_password_flow(email),
+            "Password reset confirmation message was not displayed or reset failed."
+        )
 
 if __name__ == '__main__':
     unittest.main()
