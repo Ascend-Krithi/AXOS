@@ -1,81 +1,73 @@
-# Import necessary modules
-from Pages.LoginPage import LoginPage
+import asyncio
+from RulePage import RulePage
+from LoginPage import LoginPage
 
 class TestLoginFunctionality:
+    def __init__(self, page):
+        self.page = page
+        self.login_page = LoginPage(page)
+
+    async def test_empty_fields_validation(self):
+        await self.login_page.navigate()
+        await self.login_page.submit_login('', '')
+        assert await self.login_page.get_error_message() == 'Mandatory fields are required'
+
+    async def test_remember_me_functionality(self):
+        await self.login_page.navigate()
+        await self.login_page.fill_email('user@example.com')
+        await self.login_page.fill_password('password123')
+        await self.login_page.toggle_remember_me(True)
+        await self.login_page.submit_login('user@example.com', 'password123')
+        assert await self.login_page.is_remember_me_checked()
+
+class TestRuleCreationExecution:
     def __init__(self, driver):
         self.driver = driver
-        self.login_page = LoginPage(driver)
+        self.rule_page = RulePage(driver)
 
-    def test_empty_fields_validation(self):
-        self.login_page.open()
-        self.login_page.enter_email('')
-        self.login_page.enter_password('')
-        self.login_page.submit_login()
-        assert self.login_page.is_empty_field_prompt_visible() == True
-
-    def test_remember_me_functionality(self):
-        self.login_page.open()
-        self.login_page.enter_email('user@example.com')
-        self.login_page.enter_password('securepassword')
-        self.login_page.toggle_remember_me(True)
-        self.login_page.submit_login()
-        assert self.login_page.is_dashboard_visible()
-
-    # TC-FT-001: Specific Date Trigger Test
-    def test_specific_date_trigger_rule(self):
-        """
-        Test Case TC-FT-001
-        Steps:
-        1. Define a JSON rule with trigger type 'specific_date' set to a future date.
-        2. Simulate system time reaching the trigger date.
-        3. Verify that the transfer action is executed exactly once at the specified date.
-        """
-        rule = {
-            "trigger": {"type": "specific_date", "date": "2024-07-01T10:00:00Z"},
-            "action": {"type": "fixed_amount", "amount": 100},
-            "conditions": []
+    async def test_specific_date_fixed_amount_rule(self):
+        # Define rule with trigger type 'specific_date' and fixed amount
+        rule_json = {
+            "name": "Fixed Amount Specific Date",
+            "trigger": {
+                "type": "specific_date",
+                "date": "2024-07-01T10:00:00Z"
+            },
+            "action": {
+                "type": "fixed_amount",
+                "amount": 100
+            }
         }
-        # Simulate rule submission (pseudo-code, replace with real API/UI interaction)
-        result = self.simulate_rule_submission(rule)
-        assert result['accepted'] == True
-        # Simulate system time (pseudo-code, replace with real time manipulation)
-        self.simulate_system_time("2024-07-01T10:00:00Z")
-        # Verify transfer action
-        transfer_executed = self.verify_transfer_action("fixed_amount", 100)
-        assert transfer_executed == True
+        await self.rule_page.open()
+        await self.rule_page.define_rule(rule_json)
+        assert await self.rule_page.verify_rule_accepted()
 
-    # TC-FT-002: Recurring Weekly Trigger Test
-    def test_recurring_weekly_trigger_rule(self):
-        """
-        Test Case TC-FT-002
-        Steps:
-        1. Define a JSON rule with trigger type 'recurring' and interval 'weekly'.
-        2. Simulate the passing of several weeks.
-        3. Verify that the transfer action is executed at the start of each interval.
-        """
-        rule = {
-            "trigger": {"type": "recurring", "interval": "weekly"},
-            "action": {"type": "percentage_of_deposit", "percentage": 10},
-            "conditions": []
+        # Simulate system time reaching trigger date
+        await self.rule_page.simulate_time_trigger(date_str="2024-07-01T10:00:00Z")
+
+        # Verify rule execution
+        assert await self.rule_page.verify_execution()
+
+    async def test_recurring_weekly_percentage_of_deposit_rule(self):
+        # Define rule with trigger type 'recurring' (interval 'weekly') and percentage_of_deposit action
+        rule_json = {
+            "name": "Weekly Percentage of Deposit",
+            "trigger": {
+                "type": "recurring",
+                "interval": "weekly"
+            },
+            "action": {
+                "type": "percentage_of_deposit",
+                "percentage": 10
+            }
         }
-        # Simulate rule submission (pseudo-code, replace with real API/UI interaction)
-        result = self.simulate_rule_submission(rule)
-        assert result['accepted'] == True
-        # Simulate time passage (pseudo-code, replace with real time manipulation)
-        for week in range(3):
-            self.simulate_system_time(f"2024-07-01T10:00:00Z+{week*7}d")
-            transfer_executed = self.verify_transfer_action("percentage_of_deposit", 10)
-            assert transfer_executed == True
+        await self.rule_page.open()
+        await self.rule_page.define_rule(rule_json)
+        assert await self.rule_page.verify_rule_accepted()
 
-    # Helper methods (pseudo-code, to be replaced with actual implementations)
-    def simulate_rule_submission(self, rule):
-        # Submit rule to system, return result
-        return {"accepted": True}
+        # Simulate several weeks
+        weeks_to_simulate = 3
+        await self.rule_page.simulate_time_trigger(interval="weekly", weeks=weeks_to_simulate)
 
-    def simulate_system_time(self, date_str):
-        # Manipulate system time for testing
-        pass
-
-    def verify_transfer_action(self, action_type, value):
-        # Verify action execution
-        return True
+        # Verify rule execution after several weeks
+        assert await self.rule_page.verify_execution()
