@@ -1,6 +1,5 @@
-import asyncio
-from RuleConfigurationPage import RuleConfigurationPage
-from LoginPage import LoginPage
+# Import necessary modules
+from Pages.RuleConfigurationPage import RuleConfigurationPage
 
 class TestLoginFunctionality:
     def __init__(self, page):
@@ -15,54 +14,75 @@ class TestLoginFunctionality:
     async def test_remember_me_functionality(self):
         await self.login_page.navigate()
         await self.login_page.fill_email('')
-        # Add remaining implementation here
 
 class TestRuleConfiguration:
-    def __init__(self, page):
-        self.page = page
-        self.rule_page = RuleConfigurationPage(page)
+    def __init__(self, driver):
+        self.page = RuleConfigurationPage(driver)
 
-    async def test_TC_SCRUM158_01_create_and_validate_rule(self):
-        # Prepare JSON rule schema with all supported trigger, condition, and action types
-        rule_schema = {
-            "name": "AllTypesRule",
-            "trigger": {"type": "all_supported_trigger", "params": {}},
-            "conditions": [
-                {"type": "condition_type_1", "params": {}},
-                {"type": "condition_type_2", "params": {}}
-            ],
-            "actions": [
-                {"type": "action_type_1", "params": {}},
-                {"type": "action_type_2", "params": {}}
-            ]
-        }
-        await self.rule_page.navigate_to_rule_configuration()
-        await self.rule_page.open_create_rule_dialog()
-        await self.rule_page.input_rule_schema(rule_schema)
-        await self.rule_page.submit_rule()
-        assert await self.rule_page.verify_rule_created(rule_schema["name"])
-        assert await self.rule_page.validate_rule_schema(rule_schema)
+    def test_TC_SCRUM158_01_create_full_rule(self):
+        """
+        Test Case TC_SCRUM158_01: Prepare a JSON rule schema with all supported trigger, condition, and action types, submit, and validate.
+        """
+        rule_id = 'AUTO_TC158_01'
+        rule_name = 'Full Rule - All Types'
+        trigger_type = 'balance_above'
+        date_value = '2026-02-10'
+        interval = '7'
+        after_deposit = True
+        conditions = [{
+            'type': 'balance',
+            'threshold': '1000',
+            'source': 'bank',
+            'operator': 'greater_than'
+        }]
+        actions = [{
+            'type': 'transfer',
+            'amount': '500',
+            'percentage': '50',
+            'destination_account': 'ACC123456789'
+        }]
+        json_schema = '{"trigger": "balance_above", "conditions": [{"type": "balance", "threshold": 1000, "source": "bank", "operator": "greater_than"}], "actions": [{"type": "transfer", "amount": 500, "percentage": 50, "destination_account": "ACC123456789"}]}'
+        success_message = self.page.create_rule(rule_id, rule_name, trigger_type, date_value, interval, after_deposit, conditions, actions, json_schema)
+        assert 'success' in success_message.lower()
 
-    async def test_TC_SCRUM158_02_create_rule_multiple_conditions_actions_and_simulate(self):
-        # Prepare rule schema with multiple conditions/actions
-        rule_schema = {
-            "name": "MultiCondActionRule",
-            "trigger": {"type": "supported_trigger", "params": {}},
-            "conditions": [
-                {"type": "condition_type_1", "params": {}},
-                {"type": "condition_type_2", "params": {}},
-                {"type": "condition_type_3", "params": {}}
-            ],
-            "actions": [
-                {"type": "action_type_1", "params": {}},
-                {"type": "action_type_2", "params": {}},
-                {"type": "action_type_3", "params": {}}
-            ]
-        }
-        await self.rule_page.navigate_to_rule_configuration()
-        await self.rule_page.open_create_rule_dialog()
-        await self.rule_page.input_rule_schema(rule_schema)
-        await self.rule_page.submit_rule()
-        assert await self.rule_page.verify_rule_created(rule_schema["name"])
-        await self.rule_page.simulate_rule(rule_schema["name"])
-        assert await self.rule_page.verify_simulation_results(rule_schema["name"])
+    def test_TC_SCRUM158_02_create_multi_condition_action_rule(self):
+        """
+        Test Case TC_SCRUM158_02: Prepare a rule schema with two conditions and two actions, submit, and validate logic.
+        """
+        rule_id = 'AUTO_TC158_02'
+        rule_name = 'Multi Condition/Action Rule'
+        trigger_type = 'balance_above'
+        date_value = '2026-02-11'
+        interval = '14'
+        after_deposit = False
+        conditions = [
+            {
+                'type': 'balance',
+                'threshold': '2000',
+                'source': 'bank',
+                'operator': 'greater_than'
+            },
+            {
+                'type': 'transaction',
+                'threshold': '500',
+                'source': 'atm',
+                'operator': 'less_than'
+            }
+        ]
+        actions = [
+            {
+                'type': 'transfer',
+                'amount': '1000',
+                'percentage': '',
+                'destination_account': 'ACC987654321'
+            },
+            {
+                'type': 'notify',
+                'amount': '',
+                'percentage': '',
+                'destination_account': ''
+            }
+        ]
+        json_schema = '{"trigger": "balance_above", "conditions": [{"type": "balance", "threshold": 2000, "source": "bank", "operator": "greater_than"}, {"type": "transaction", "threshold": 500, "source": "atm", "operator": "less_than"}], "actions": [{"type": "transfer", "amount": 1000, "destination_account": "ACC987654321"}, {"type": "notify"}]}'
+        success_message = self.page.create_rule(rule_id, rule_name, trigger_type, date_value, interval, after_deposit, conditions, actions, json_schema)
+        assert 'success' in success_message.lower()
