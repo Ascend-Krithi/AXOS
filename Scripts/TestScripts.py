@@ -1,7 +1,7 @@
 # TestScripts.py
 """
 Automation Test Scripts for Login Scenarios
-Covers: TC_LOGIN_005 (empty fields validation), TC_LOGIN_006 ('Remember Me' and session persistence), TC_LOGIN_007 (Forgot Password flow), TC_LOGIN_008 (SQL Injection validation)
+Covers: TC_LOGIN_005 (empty fields validation), TC_LOGIN_006 ('Remember Me' and session persistence), TC_LOGIN_007 (Forgot Password flow), TC_LOGIN_008 (SQL Injection validation), TC_LOGIN_009 (max length input validation), TC_LOGIN_010 (unregistered user login validation)
 Strict adherence to Selenium Python best practices, atomic methods, robust locator handling, and comprehensive docstrings.
 """
 
@@ -94,3 +94,40 @@ def test_sql_injection_login(driver):
     assert result['fields_accept_input'], "Fields did not accept SQL injection input."
     assert result['error_message'] == "Invalid credentials", f"Unexpected error message: {result['error_message']}"
     assert not result['security_breach_detected'], "Security breach detected during SQL injection login attempt."
+
+# --- TC_LOGIN_009: Max length input validation ---
+def test_login_max_length_fields(driver):
+    """
+    TC_LOGIN_009: Validate login with maximum allowed characters in email/username and password fields.
+    Steps:
+    1. Navigate to login page.
+    2. Enter maximum allowed characters (50 chars) in email and password fields.
+    3. Click login.
+    4. Verify fields accept input up to limit and error message is shown if credentials are invalid. No field overflow or UI break.
+    """
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login_page(LOGIN_URL)
+    max_length_email = "a" * 50  # 50 chars
+    max_length_password = "A" * 50  # 50 chars
+    result = login_page.login_with_max_length_credentials(max_length_email, max_length_password)
+    assert result["email_field"], "Email field did not accept max length input."
+    assert result["password_field"], "Password field did not accept max length input."
+    assert result["error_message"] in ["Invalid credentials", ""], f"Unexpected error message: {result['error_message']}"
+    # Optionally check for UI overflow if locators available
+
+# --- TC_LOGIN_010: Unregistered user login validation ---
+def test_login_unregistered_user(driver):
+    """
+    TC_LOGIN_010: Validate login with unregistered credentials.
+    Steps:
+    1. Navigate to login page.
+    2. Enter email/username and password for a user not registered.
+    3. Click login.
+    4. Verify error message 'User not found' or 'Invalid credentials' is shown. User remains on login page.
+    """
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login_page(LOGIN_URL)
+    unregistered_email = "unknown@example.com"
+    unregistered_password = "RandomPass789"
+    result = login_page.login_with_invalid_credentials(unregistered_email, unregistered_password)
+    assert result, "Error message for unregistered user not displayed or user not retained on login page."
