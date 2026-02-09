@@ -71,3 +71,23 @@ class TestLoginFunctionality:
         valid_password = "ValidPassword123"
         result = self.login_page.validate_maximum_input_length_login(login_url, max_length_email, valid_password)
         assert result, "Login was not successful or field did not accept maximum input length."
+
+    async def test_TC_LOGIN_005_special_characters_login(self):
+        """
+        TC_LOGIN_005: Enter email/username and password containing special characters, validate fields accept input and login outcome.
+        """
+        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        special_email = "special_user!@#$/example.com"
+        special_password = "P@$$w0rd!#"
+        result = self.login_page.validate_special_characters_login(login_url, special_email, special_password)
+        assert result, "Special characters were not accepted or login failed."
+
+    async def test_TC_LOGIN_006_remember_me_session_persistence(self):
+        """
+        TC_LOGIN_006: Enter valid credentials, select 'Remember Me', click login, validate checkbox is checked and session persists after browser restart.
+        """
+        login_url = "http://your-login-url.com"  # Replace with actual login page URL
+        valid_email = "user@example.com"
+        valid_password = "ValidPassword123"
+        result = self.login_page.validate_remember_me_login(login_url, valid_email, valid_password)
+        assert result, "Remember Me checkbox was not checked or session did not persist."
