@@ -7,6 +7,9 @@ Strict adherence to Selenium Python best practices, atomic methods, robust locat
 
 import pytest
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from Pages.LoginPage import LoginPage
 from Pages.DashboardPage import DashboardPage
 
@@ -58,3 +61,58 @@ def test_login_remember_me_session_persistence(driver):
     # Simulate browser reopen (for demonstration, we'll revisit dashboard URL in same session)
     session_persisted = dashboard_page.validate_session_after_browser_reopen(DASHBOARD_URL)
     assert session_persisted, "Session did not persist after browser reopen; dashboard not displayed."
+
+# --- TC_LOGIN_01: Valid login ---
+def test_login_valid_credentials(driver):
+    """
+    TC_LOGIN_01: Validate login with valid credentials.
+    Steps:
+    1. Navigate to login page.
+    2. Enter valid email and password.
+    3. Click login.
+    4. Verify dashboard is displayed.
+    """
+    login_page = LoginPage(driver)
+    dashboard_page = DashboardPage(driver)
+    try:
+        login_page.navigate_to_login_page(LOGIN_URL)
+        WebDriverWait(driver, 10).until(lambda d: login_page.is_login_page_loaded())
+        email = "user@example.com"
+        password = "ValidPass123"
+        login_page.enter_email(email)
+        login_page.enter_password(password)
+        login_page.click_login()
+        WebDriverWait(driver, 10).until(lambda d: dashboard_page.is_dashboard_displayed())
+        assert dashboard_page.is_dashboard_displayed(), "Dashboard not displayed after valid login."
+    except TimeoutException:
+        pytest.fail("Timeout waiting for page elements during valid login flow.")
+    except Exception as e:
+        pytest.fail(f"Unexpected error during valid login: {e}")
+
+# --- TC_LOGIN_02: Invalid login ---
+def test_login_invalid_credentials(driver):
+    """
+    TC_LOGIN_02: Validate login with invalid credentials and error handling.
+    Steps:
+    1. Navigate to login page.
+    2. Enter invalid email and password.
+    3. Click login.
+    4. Verify error message is displayed and user remains on login page.
+    """
+    login_page = LoginPage(driver)
+    try:
+        login_page.navigate_to_login_page(LOGIN_URL)
+        WebDriverWait(driver, 10).until(lambda d: login_page.is_login_page_loaded())
+        invalid_email = "invalid_user@example.com"
+        invalid_password = "WrongPass!"
+        login_page.enter_email(invalid_email)
+        login_page.enter_password(invalid_password)
+        login_page.click_login()
+        WebDriverWait(driver, 10).until(lambda d: login_page.get_error_message() is not None)
+        error_message = login_page.get_error_message()
+        expected_message = "Invalid username or password."
+        assert login_page.validate_error_message(expected_message), f"Error message mismatch. Expected: '{expected_message}', Got: '{error_message}'"
+    except TimeoutException:
+        pytest.fail("Timeout waiting for error message during invalid login flow.")
+    except Exception as e:
+        pytest.fail(f"Unexpected error during invalid login: {e}")
