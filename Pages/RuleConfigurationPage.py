@@ -95,3 +95,23 @@ class RuleConfigurationPage:
         """
         error_elem = self.wait.until(EC.visibility_of_element_located(self.schema_error_message))
         assert expected_error in error_elem.text, f"Expected error message '{expected_error}' not found."
+
+    # TC_SCRUM158_07 functions
+    def prepare_minimum_rule_schema(self, trigger, condition, action):
+        """
+        Prepares a rule schema with only required fields (one trigger, one condition, one action).
+        """
+        self.wait.until(EC.visibility_of_element_located(self.trigger_type_dropdown)).send_keys(trigger["type"])
+        self.wait.until(EC.element_to_be_clickable(self.add_condition_btn)).click()
+        self.wait.until(EC.visibility_of_element_located(self.condition_type_dropdown)).send_keys(condition["type"])
+        self.wait.until(EC.visibility_of_element_located(self.operator_dropdown)).send_keys(condition["operator"])
+        self.wait.until(EC.visibility_of_element_located(self.balance_threshold_input)).send_keys(str(condition["value"]))
+        self.wait.until(EC.visibility_of_element_located(self.action_type_dropdown)).send_keys(action["type"])
+        self.wait.until(EC.visibility_of_element_located(self.destination_account_input)).send_keys(action["account"])
+        self.wait.until(EC.visibility_of_element_located(self.transfer_amount_input)).send_keys(str(action["amount"]))
+
+    def submit_rule(self):
+        """
+        Submits the rule and verifies creation.
+        """
+        self.wait.until(EC.element_to_be_clickable(self.save_rule_button)).click()
