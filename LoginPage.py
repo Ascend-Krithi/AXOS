@@ -1,7 +1,7 @@
 # LoginPage.py
 """
 PageClass for Login Page
-Covers: TC_Login_07 (login without 'Remember Me', session expiration after browser reopen), TC_LOGIN_001 (positive login with valid credentials, redirect to dashboard)
+Covers: TC_LOGIN_002 (invalid credentials), TC_LOGIN_003 (empty fields)
 Strict adherence to Selenium Python best practices, atomic methods, robust locator handling, and comprehensive docstrings.
 """
 from selenium.webdriver.common.by import By
@@ -13,8 +13,9 @@ class LoginPage:
     """
     Page Object Model for the Login Page.
     Covers:
-    - TC_Login_07: Login without 'Remember Me', session expiration after browser reopen.
-    - TC_LOGIN_001: Positive login with valid credentials, redirect to dashboard.
+    - TC_LOGIN_002: Invalid credentials scenario.
+    - TC_LOGIN_003: Empty fields scenario.
+    Implements robust, atomic methods and comprehensive error validation.
     """
 
     EMAIL_INPUT = (By.ID, "email")
@@ -104,24 +105,49 @@ class LoginPage:
         self.set_remember_me(remember_me)
         self.click_login()
 
-    def validate_missing_email_error(self, password: str) -> bool:
+    def login_with_invalid_credentials(self, email: str, password: str) -> bool:
         """
-        Attempts login with missing email/username and validates the error message.
-        :param password: Valid password
-        :return: True if correct error is shown, else False
-        """
-        self.enter_email("")
-        self.enter_password(password)
-        self.click_login()
-        return self.get_error_message().strip() == "Email/Username required"
-
-    def validate_missing_password_error(self, email: str) -> bool:
-        """
-        Attempts login with missing password and validates the error message.
-        :param email: Valid email/username
+        Attempts login with invalid credentials and validates the error message.
+        :param email: Invalid email or username
+        :param password: Invalid password
         :return: True if correct error is shown, else False
         """
         self.enter_email(email)
+        self.enter_password(password)
+        self.click_login()
+        # Update the expected error message as per application
+        expected_error = "Invalid email or password"
+        actual_error = self.get_error_message().strip()
+        return actual_error == expected_error
+
+    def login_with_empty_fields(self) -> dict:
+        """
+        Attempts login with both fields empty, email empty, and password empty, and returns error validation results.
+        :return: Dict with keys 'both_empty', 'email_empty', 'password_empty' and boolean values for each
+        """
+        results = {}
+        # Both fields empty
+        self.enter_email("")
         self.enter_password("")
         self.click_login()
-        return self.get_error_message().strip() == "Password required"
+        results['both_empty'] = self.get_error_message().strip() == "Email/Username required"
+        # Email empty
+        self.enter_email("")
+        self.enter_password("ValidPassword123")
+        self.click_login()
+        results['email_empty'] = self.get_error_message().strip() == "Email/Username required"
+        # Password empty
+        self.enter_email("valid@email.com")
+        self.enter_password("")
+        self.click_login()
+        results['password_empty'] = self.get_error_message().strip() == "Password required"
+        return results
+
+    def validate_error_message(self, expected_message: str) -> bool:
+        """
+        Validates the displayed error message matches the expected message.
+        :param expected_message: The expected error message text
+        :return: True if matches, False otherwise
+        """
+        actual_message = self.get_error_message().strip()
+        return actual_message == expected_message.strip()
