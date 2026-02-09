@@ -39,3 +39,45 @@ def test_define_rule_with_empty_conditions_and_trigger(driver):
     # e.g., rule = define_rule({...})
     # trigger_rule(rule)
     # assert transfer_executed_without_conditions()
+
+# Test Case TC-FT-001: Define a JSON rule with trigger type 'specific_date' set to a future date.
+# Simulate system time reaching the trigger date.
+# Expected: Rule is accepted by the system; transfer action is executed exactly once at the specified date.
+def test_define_rule_with_specific_date_trigger(driver):
+    login_page = LoginPage(driver)
+    driver.get(LoginPage.URL)
+    login_page.enter_email('testuser@example.com')
+    login_page.enter_password('securepassword')
+    login_page.click_login_submit()
+    assert login_page.is_dashboard_loaded(), 'Dashboard did not load after login.'
+    # Placeholder: Steps for defining rule with specific_date trigger
+    # e.g., rule = define_rule({
+    #     'trigger_type': 'specific_date',
+    #     'trigger_date': '2024-07-15T10:00:00Z',
+    #     'action': 'transfer',
+    #     ...
+    # })
+    # simulate_system_time('2024-07-15T10:00:00Z')
+    # assert rule.is_accepted()
+    # assert transfer_action_executed_once_at('2024-07-15T10:00:00Z')
+
+# Test Case TC-FT-002: Define a JSON rule with trigger type 'recurring' and interval 'weekly'.
+# Simulate the passing of several weeks.
+# Expected: Rule is accepted by the system; transfer action is executed at the start of each interval.
+def test_define_rule_with_recurring_weekly_trigger(driver):
+    login_page = LoginPage(driver)
+    driver.get(LoginPage.URL)
+    login_page.enter_email('testuser@example.com')
+    login_page.enter_password('securepassword')
+    login_page.click_login_submit()
+    assert login_page.is_dashboard_loaded(), 'Dashboard did not load after login.'
+    # Placeholder: Steps for defining rule with recurring weekly trigger
+    # e.g., rule = define_rule({
+    #     'trigger_type': 'recurring',
+    #     'interval': 'weekly',
+    #     'action': 'transfer',
+    #     ...
+    # })
+    # simulate_weeks_passing(3)
+    # assert rule.is_accepted()
+    # assert transfer_action_executed_at_each_week_start()
