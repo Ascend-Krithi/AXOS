@@ -11,39 +11,22 @@ class RuleManagementPage:
         self.locators = locators
 
     def upload_rules_batch(self, file_path):
-        """
-        Uploads a batch file containing rules.
-        Args:
-            file_path (str): Path to the rules file to upload.
-        """
         upload_input = self.driver.find_element(By.XPATH, self.locators['rule_upload_input'])
         upload_input.send_keys(file_path)
         upload_button = self.driver.find_element(By.XPATH, self.locators['rule_upload_button'])
         upload_button.click()
-        # Wait for upload confirmation
         WebDriverWait(self.driver, 60).until(
             EC.visibility_of_element_located((By.XPATH, self.locators['upload_success_message']))
         )
 
     def evaluate_all_rules(self):
-        """
-        Evaluates all rules in the system.
-        """
         eval_button = self.driver.find_element(By.XPATH, self.locators['evaluate_all_button'])
         eval_button.click()
-        # Wait for evaluation to complete
         WebDriverWait(self.driver, 120).until(
             EC.visibility_of_element_located((By.XPATH, self.locators['evaluation_complete_message']))
         )
 
     def check_sql_injection_rejection(self, malicious_rule):
-        """
-        Attempts to upload a rule with SQL injection and verifies rejection.
-        Args:
-            malicious_rule (str): Rule string containing SQL injection.
-        Returns:
-            bool: True if rejected, False otherwise.
-        """
         upload_input = self.driver.find_element(By.XPATH, self.locators['rule_upload_input'])
         upload_input.clear()
         upload_input.send_keys(malicious_rule)
@@ -58,23 +41,11 @@ class RuleManagementPage:
             return False
 
     def validate_batch_upload(self, expected_count):
-        """
-        Validates that the expected number of rules are uploaded.
-        Args:
-            expected_count (int): Expected number of rules.
-        Returns:
-            bool: True if count matches, False otherwise.
-        """
         rule_count_elem = self.driver.find_element(By.XPATH, self.locators['rule_count_display'])
         actual_count = int(rule_count_elem.text)
         return actual_count == expected_count
 
     def get_evaluation_status(self):
-        """
-        Returns the evaluation status of all rules.
-        Returns:
-            dict: Status summary (e.g., {'passed': 9990, 'failed': 10})
-        """
         status_elem = self.driver.find_element(By.XPATH, self.locators['evaluation_status_display'])
         status_text = status_elem.text
         import re
@@ -87,13 +58,6 @@ class RuleManagementPage:
         return {}
 
     def check_batch_sql_injection(self, file_path):
-        """
-        Uploads a batch file with SQL injection rules and checks for rejection.
-        Args:
-            file_path (str): Path to batch file.
-        Returns:
-            bool: True if all SQL injections are rejected, False otherwise.
-        """
         upload_input = self.driver.find_element(By.XPATH, self.locators['rule_upload_input'])
         upload_input.send_keys(file_path)
         upload_button = self.driver.find_element(By.XPATH, self.locators['rule_upload_button'])
@@ -105,3 +69,22 @@ class RuleManagementPage:
             return True
         except TimeoutException:
             return False
+
+    # NEW METHOD for currency_conversion rule
+    def define_currency_conversion_rule(self, currency, amount):
+        # Placeholder for actual UI interaction
+        # Should be updated when UI locators are available
+        rule_input = self.driver.find_element(By.ID, "rule-currency-conversion")  # Add this locator to Locators.json
+        rule_input.clear()
+        rule_input.send_keys(f"Currency: {currency}, Amount: {amount}")
+        submit_button = self.driver.find_element(By.ID, "rule-submit")  # Add this locator to Locators.json
+        submit_button.click()
+        try:
+            WebDriverWait(self.driver, 10).until(
+                EC.visibility_of_element_located((By.ID, "rule-success-message"))  # Add this locator to Locators.json
+            )
+            return True
+        except TimeoutException:
+            # Graceful rejection
+            error_elem = self.driver.find_element(By.ID, "rule-error-message")  # Add this locator to Locators.json
+            return error_elem.text
