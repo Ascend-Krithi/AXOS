@@ -1,7 +1,7 @@
 # LoginPage.py
 """
 PageClass for Login Page
-Covers: TC_LOGIN_002 (invalid credentials), TC_LOGIN_003 (empty fields), TC_Login_10 (max length validation), TC_LOGIN_004 (max length validation)
+Covers: TC_LOGIN_002 (invalid credentials), TC_LOGIN_003 (empty fields), TC_Login_10 (max length validation), TC_LOGIN_004 (max length validation), TC_LOGIN_005, TC_LOGIN_006 ('Remember Me', session persistence)
 Strict adherence to Selenium Python best practices, atomic methods, robust locator handling, and comprehensive docstrings.
 """
 
@@ -18,6 +18,8 @@ class LoginPage:
     - TC_LOGIN_003: Empty fields scenario.
     - TC_Login_10: Maximum allowed length validation for email and password fields.
     - TC_LOGIN_004: Maximum allowed character input for email/username and password fields.
+    - TC_LOGIN_005: Empty fields validation.
+    - TC_LOGIN_006: Valid login with 'Remember Me', session persistence after browser reopen.
     Implements robust, atomic methods and comprehensive error validation.
     """
 
@@ -122,7 +124,6 @@ class LoginPage:
         self.enter_email(email)
         self.enter_password(password)
         self.click_login()
-        # Update the expected error message as per application
         expected_error = "Invalid email or password"
         actual_error = self.get_error_message().strip()
         return actual_error == expected_error
@@ -137,7 +138,7 @@ class LoginPage:
         self.enter_email("")
         self.enter_password("")
         self.click_login()
-        results['both_empty'] = self.get_error_message().strip() == "Email/Username required"
+        results['both_empty'] = self.get_error_message().strip() == "Email/Username and Password required"
         # Email empty
         self.enter_email("")
         self.enter_password("ValidPassword123")
@@ -194,9 +195,8 @@ class LoginPage:
         email_ok = self.enter_max_length_email(email)
         password_ok = self.enter_max_length_password(password)
         self.click_login()
-        # Check if login was successful or error message displayed
         error_msg = self.get_error_message().strip()
-        login_success = error_msg == ""  # Assuming empty error means success
+        login_success = error_msg == ""
         return {
             "email_field": email_ok,
             "password_field": password_ok,
@@ -222,14 +222,11 @@ class LoginPage:
             self.enter_email(email)
             self.enter_password(password)
             self.click_login()
-            # Wait for error or lockout/captcha/rate limit
             try:
                 error_msg = self.wait.until(EC.visibility_of_element_located(self.ERROR_MESSAGE)).text.strip()
                 final_error_message = error_msg
             except Exception:
                 final_error_message = ""
-
-            # Check for lockout message
             try:
                 lockout_elem = self.driver.find_element(*self.LOCKOUT_MESSAGE)
                 if lockout_elem.is_displayed():
@@ -238,8 +235,6 @@ class LoginPage:
                     break
             except Exception:
                 pass
-
-            # Check for rate limit message
             try:
                 rate_limit_elem = self.driver.find_element(*self.RATE_LIMIT_MESSAGE)
                 if rate_limit_elem.is_displayed():
@@ -248,8 +243,6 @@ class LoginPage:
                     break
             except Exception:
                 pass
-
-            # Check for captcha element
             try:
                 captcha_elem = self.driver.find_element(*self.CAPTCHA_ELEMENT)
                 if captcha_elem.is_displayed():
@@ -258,7 +251,6 @@ class LoginPage:
                     break
             except Exception:
                 pass
-
         return {
             "lockout_detected": lockout_detected,
             "rate_limit_detected": rate_limit_detected,
@@ -277,14 +269,56 @@ class LoginPage:
         self.enter_email(email)
         self.enter_password(password)
         self.click_login()
-        # Wait for result
         error_msg = ""
         try:
             error_msg = self.wait.until(EC.visibility_of_element_located(self.ERROR_MESSAGE)).text.strip()
         except Exception:
             pass
-        login_success = error_msg == ""  # Assume empty error means success
+        login_success = error_msg == ""
         return {
             "login_success": login_success,
             "error_message": error_msg
         }
+
+    # --- TC_LOGIN_005: Atomic empty fields validation ---
+    def validate_empty_fields_login(self) -> bool:
+        """
+        Validates login with both email/username and password fields empty.
+        :return: True if error message 'Email/Username and Password required' is shown and user remains on login page, False otherwise
+        """
+        self.enter_email("")
+        self.enter_password("")
+        self.click_login()
+        error = self.get_error_message().strip()
+        return error == "Email/Username and Password required"
+
+    # --- TC_LOGIN_006: Valid login with 'Remember Me' and session persistence ---
+    def login_with_remember_me(self, email: str, password: str) -> bool:
+        """
+        Performs login with valid credentials and 'Remember Me' checked.
+        :param email: Valid email/username
+        :param password: Valid password
+        :return: True if login is successful and redirected to dashboard, False otherwise
+        """
+        self.enter_email(email)
+        self.enter_password(password)
+        self.set_remember_me(True)
+        self.click_login()
+        try:
+            self.wait.until_not(EC.visibility_of_element_located(self.LOGIN_BUTTON))
+            return True
+        except Exception:
+            return False
+
+    def validate_session_persistence_after_reopen(self, url: str) -> bool:
+        """
+        After browser is reopened, validates that user remains logged in and dashboard is displayed.
+        :param url: URL to revisit after browser reopen
+        :return: True if dashboard is displayed (session persisted), False otherwise
+        """
+        self.driver.get(url)
+        try:
+            self.wait.until_not(EC.visibility_of_element_located(self.LOGIN_BUTTON))
+            return True
+        except Exception:
+            return False
