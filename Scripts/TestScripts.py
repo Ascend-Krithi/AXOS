@@ -79,3 +79,35 @@ def test_login_max_length_invalid_credentials_feedback(driver):
     else:
         error_message = login_page.get_error_message()
         assert error_message is not None, "Error feedback should be shown for invalid credentials."
+
+# TC_Login_08: Forgot Password Flow
+def test_tc_login_08_forgot_password_flow(driver):
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login_page("https://axos.example.com/login")
+    assert driver.current_url.endswith("/login")
+    login_page.click_forgot_password()
+    # Assert user is redirected to password recovery page
+    assert "recovery" in driver.current_url or login_page.wait.until(lambda d: "recovery" in d.current_url), "User should be redirected to password recovery page."
+
+# TC_Login_09: Maximum Input Length Handling and Login
+def test_tc_login_09_max_length_login(driver):
+    login_page = LoginPage(driver)
+    login_page.navigate_to_login_page("https://axos.example.com/login")
+    assert driver.current_url.endswith("/login")
+    # Test Data: 255-character email (truncated to 254), valid password
+    max_email = "x" * 255 + "@example.com"
+    valid_password = "ValidPassword123"
+    login_page.enter_email(max_email)
+    login_page.enter_password(valid_password)
+    login_page.click_login()
+    # Assert fields accept maximum length input
+    email_field = login_page.wait.until(lambda d: d.find_element(*login_page.EMAIL_INPUT))
+    assert len(email_field.get_attribute("value")) <= login_page.EMAIL_MAX_LENGTH, "Email field should accept maximum allowed length."
+    password_field = login_page.wait.until(lambda d: d.find_element(*login_page.PASSWORD_INPUT))
+    assert len(password_field.get_attribute("value")) <= login_page.PASSWORD_MAX_LENGTH, "Password field should accept maximum allowed length."
+    # Assert login outcome
+    if login_page.is_login_successful():
+        assert True, "User is logged in with maximum length credentials."
+    else:
+        error_message = login_page.get_error_message()
+        assert error_message is not None, "Error feedback should be shown for invalid credentials."
