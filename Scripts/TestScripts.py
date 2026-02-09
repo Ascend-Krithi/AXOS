@@ -75,3 +75,21 @@ class TestRuleConfiguration(unittest.TestCase):
         # Step 2: Trigger rule and verify transfer
         transfer_valid = self.page.trigger_rule_and_verify_transfer(deposit_amount, expected_transfer_amount)
         self.assertTrue(transfer_valid, f"Transfer not executed as expected for deposit {deposit_amount} and amount {expected_transfer_amount}")
+
+    def test_TC_SCRUM158_03_create_and_schedule_recurring_interval_rule(self):
+        """TC_SCRUM158_03: Create a schema with a recurring interval trigger (weekly) and verify scheduling logic."""
+        rule_name = "SCRUM158_03_WeeklyIntervalRule"
+        interval_type = "Weekly"
+        interval_value = "1"
+        trigger_value = "weekly"
+        result = self.page.create_recurring_interval_rule(rule_name, interval_type, interval_value, trigger_value)
+        self.assertTrue(result, "Rule was not accepted and scheduled for recurring evaluation.")
+
+    def test_TC_SCRUM158_04_validate_missing_trigger_error(self):
+        """TC_SCRUM158_04: Submit schema missing 'trigger' field and verify error message."""
+        rule_schema = {
+            "conditions": [{"type": "amount", "operator": "<", "value": 50}],
+            "actions": [{"type": "transfer", "account": "D", "amount": 50}]
+        }
+        result = self.page.validate_missing_trigger_error(rule_schema)
+        self.assertTrue(result, "Schema was not rejected with error indicating missing required 'trigger' field.")
