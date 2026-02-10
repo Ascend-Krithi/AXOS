@@ -32,6 +32,10 @@ class RuleConfigurationPage:
         self.validate_schema_btn = driver.find_element(By.ID, "btn-verify-json")
         self.success_message = driver.find_element(By.CSS_SELECTOR, ".alert-success")
         self.schema_error_message = driver.find_element(By.CSS_SELECTOR, "[data-testid='error-feedback-text']")
+        # New locators for testCaseId 2571 and 2572
+        self.advanced_settings_toggle = driver.find_element(By.ID, "advanced-settings-toggle")
+        self.rule_priority_input = driver.find_element(By.ID, "rule-priority-field")
+        self.rule_status_dropdown = driver.find_element(By.ID, "rule-status-select")
 
     # --- Rule Form Methods ---
     def enter_rule_id(self, rule_id: str):
@@ -111,3 +115,15 @@ class RuleConfigurationPage:
 
     def get_schema_error_message(self) -> str:
         return self.schema_error_message.text
+
+    # --- Advanced Settings Methods (for testCaseId 2571 and 2572) ---
+    def toggle_advanced_settings(self):
+        self.advanced_settings_toggle.click()
+
+    def enter_rule_priority(self, priority: str):
+        self.rule_priority_input.clear()
+        self.rule_priority_input.send_keys(priority)
+
+    def select_rule_status(self, status: str):
+        self.rule_status_dropdown.click()
+        # Implement dropdown selection logic for status
