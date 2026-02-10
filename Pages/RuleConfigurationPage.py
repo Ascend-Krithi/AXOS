@@ -100,3 +100,86 @@ class RuleConfigurationPage:
 
     def save_rule(self):
         self.save_rule_button.click()
+
+    # --- New Methods for Negative Testing and Validation ---
+    def submit_rule_form(self):
+        """
+        Submits the rule form by clicking the save button.
+        """
+        self.save_rule_button.click()
+
+    def get_validation_errors(self):
+        """
+        Returns structured validation errors from the schema error message area.
+        """
+        return self.schema_error_message.text
+
+    def is_error_message_displayed(self):
+        """
+        Checks if error message is displayed after form submission.
+        """
+        try:
+            return self.schema_error_message.is_displayed()
+        except Exception:
+            return False
+
+    def get_error_fields_and_messages(self):
+        """
+        Extracts error fields and messages from the validation response.
+        Returns: List[Dict[str, str]]
+        """
+        import json
+        try:
+            error_text = self.schema_error_message.text
+            if error_text:
+                # Attempt to parse structured error if possible
+                return json.loads(error_text)
+        except Exception:
+            pass
+        return []
+
+    def fill_rule_form(self, rule_data):
+        """
+        Fills the rule form with provided data dictionary.
+        """
+        if 'rule_id' in rule_data:
+            self.set_rule_id(rule_data['rule_id'])
+        if 'rule_name' in rule_data:
+            self.set_rule_name(rule_data['rule_name'])
+        # Triggers
+        triggers = rule_data.get('triggers', [])
+        if isinstance(triggers, list):
+            for trigger in triggers:
+                if 'type' in trigger:
+                    self.select_trigger_type(trigger['type'])
+        # Conditions
+        conditions = rule_data.get('conditions', [])
+        if isinstance(conditions, list):
+            for cond in conditions:
+                self.add_condition()
+                if 'field' in cond:
+                    self.select_condition_type(cond['field'])
+                if 'operator' in cond:
+                    self.select_operator(cond['operator'])
+                if 'value' in cond:
+                    self.set_balance_threshold(cond['value'])
+        # Actions
+        actions = rule_data.get('actions', [])
+        if isinstance(actions, list):
+            for act in actions:
+                if 'type' in act:
+                    self.select_action_type(act['type'])
+                if 'amount' in act:
+                    self.set_transfer_amount(act['amount'])
+                if 'percentage' in act:
+                    self.set_percentage(act['percentage'])
+                if 'destination_account' in act:
+                    self.set_destination_account(act['destination_account'])
+
+    def fill_and_submit_rule(self, rule_data):
+        """
+        Fills the rule form and submits it, for negative validation flows.
+        """
+        self.fill_rule_form(rule_data)
+        self.save_rule_button.click()
+        return self.get_validation_errors()
