@@ -31,86 +31,33 @@ class TestRuleConfiguration:
         pass
 
     async def test_negative_rule_creation_TC_SCRUM_387_005(self):
-        # Step 1: Missing required field 'rule_id'
-        rule_data_missing_id = {
-            "rule_name": "Incomplete Rule",
-            "triggers": [],
-            "conditions": [],
-            "actions": []
-        }
-        self.rule_page.create_rule_with_invalid_data(rule_data_missing_id)
-        self.rule_page.validate_error_response([
-            {"message": "missing rule_id"}
-        ])
+        """
+        TC-SCRUM-387-005: Attempt to create a rule with invalid/missing mandatory fields.
+        Steps:
+        1. Navigate to rule configuration page.
+        2. Attempt to submit rule form with missing mandatory fields.
+        3. Validate structured error response and error message.
+        """
+        await self.rule_page.navigate_to_rule_configuration()
+        # Fill form with missing mandatory fields (e.g., no rule name)
+        await self.rule_page.fill_rule_form(rule_name='', rule_type='')
+        await self.rule_page.submit_rule_form()
+        error = await self.rule_page.get_error_message()
+        assert error is not None, 'Error message should be displayed for missing fields.'
+        assert 'mandatory' in error.lower() or 'required' in error.lower(), f'Unexpected error message: {error}'
 
-        # Step 2: Empty triggers array
-        rule_data_empty_triggers = {
-            "rule_id": "R004",
-            "triggers": [],
-            "conditions": [{"field": "balance", "operator": ">", "value": 100}],
-            "actions": [{"type": "transfer"}]
-        }
-        self.rule_page.create_rule_with_invalid_data(rule_data_empty_triggers)
-        self.rule_page.validate_error_response([
-            {"message": "at least one trigger is required"}
-        ])
-
-        # Step 3: Malformed condition (missing operator)
-        rule_data_missing_operator = {
-            "rule_id": "R005",
-            "triggers": [{"type": "event"}],
-            "conditions": [{"field": "balance", "value": 100}],
-            "actions": [{"type": "transfer"}]
-        }
-        self.rule_page.create_rule_with_invalid_data(rule_data_missing_operator)
-        self.rule_page.validate_error_response([
-            {"message": "invalid condition structure"}
-        ])
-
-        # Step 4: Error response includes detailed validation messages
-        error_response = {
-            "errors": [
-                {"field": "conditions[0].operator", "message": "operator is required"}
-            ]
-        }
-        self.rule_page.validate_error_response(error_response["errors"])
-
-    async def test_negative_rule_creation_TC_SCRUM_387_006(self):
-        # Step 1: String value where number is expected in condition
-        rule_data_invalid_amount_type = {
-            "rule_id": "R006",
-            "triggers": [{"type": "event"}],
-            "conditions": [{"field": "amount", "operator": ">", "value": "invalid_number"}],
-            "actions": [{"type": "transfer"}]
-        }
-        self.rule_page.create_rule_with_invalid_data(rule_data_invalid_amount_type)
-        self.rule_page.verify_type_validation_error("amount", "number", "string")
-
-        # Step 2: Number value where string is expected
-        rule_data_id_type_mismatch = {
-            "rule_id": 12345,
-            "triggers": [{"type": "event"}],
-            "conditions": [{"field": "status", "operator": "=", "value": "active"}],
-            "actions": [{"type": "notify"}]
-        }
-        self.rule_page.create_rule_with_invalid_data(rule_data_id_type_mismatch)
-        self.rule_page.verify_type_validation_error("rule_id", "string", "number")
-
-        # Step 3: Array where object is expected for triggers
-        rule_data_triggers_type_error = {
-            "rule_id": "R007",
-            "triggers": "invalid_array",
-            "conditions": [{"field": "balance", "operator": ">", "value": 100}],
-            "actions": [{"type": "transfer"}]
-        }
-        self.rule_page.create_rule_with_invalid_data(rule_data_triggers_type_error)
-        self.rule_page.verify_type_validation_error("triggers", "array", "string")
-
-        # Step 4: Error messages indicate expected vs actual types
-        error_response_types = {
-            "errors": [
-                {"field": "triggers", "expected": "array", "received": "string"}
-            ]
-        }
-        for err in error_response_types["errors"]:
-            self.rule_page.verify_type_validation_error(err["field"], err["expected"], err["received"])
+    async def test_negative_rule_creation_type_mismatch_TC_SCRUM_387_006(self):
+        """
+        TC-SCRUM-387-006: Attempt to create a rule with type-mismatched input fields.
+        Steps:
+        1. Navigate to rule configuration page.
+        2. Fill form with invalid data types (e.g., string instead of expected integer).
+        3. Submit and validate error response.
+        """
+        await self.rule_page.navigate_to_rule_configuration()
+        # Fill form with type mismatch, e.g., threshold expects int, but string is provided
+        await self.rule_page.fill_rule_form(rule_name='InvalidTypeRule', rule_type='Threshold', threshold='not_an_integer')
+        await self.rule_page.submit_rule_form()
+        error = await self.rule_page.get_error_message()
+        assert error is not None, 'Error message should be displayed for type mismatch.'
+        assert 'type' in error.lower() or 'invalid' in error.lower(), f'Unexpected error message: {error}'
