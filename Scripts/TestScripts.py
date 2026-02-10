@@ -51,10 +51,10 @@ class TestRuleConfiguration:
             self.rule_page.add_action(action_type="SendNotification", action_value="Email")
 
             self.rule_page.save_rule()
-            self.wait_for_element((By.XPATH, "//div[contains(text(), 'Rule saved successfully')]") )
+            self.wait_for_element((By.XPATH, "//div[contains(text(), 'Rule saved successfully')]"))
 
             self.rule_page.search_rule("AutoTestRule001")
-            self.wait_for_element((By.XPATH, "//td[contains(text(), 'AutoTestRule001')]") )
+            self.wait_for_element((By.XPATH, "//td[contains(text(), 'AutoTestRule001')]"))
             rule_details = self.rule_page.get_rule_details("AutoTestRule001")
 
             assert rule_details['name'] == "AutoTestRule001"
