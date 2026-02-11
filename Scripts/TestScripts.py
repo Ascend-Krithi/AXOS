@@ -1,9 +1,6 @@
-# Import necessary modules
-from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from Pages.RuleConfigurationPage import RuleConfigurationPage
+import asyncio
+from RuleConfigurationPage import RuleConfigurationPage
+from LoginPage import LoginPage
 
 class TestLoginFunctionality:
     def __init__(self, page):
@@ -17,56 +14,88 @@ class TestLoginFunctionality:
 
     async def test_remember_me_functionality(self):
         await self.login_page.navigate()
-        await self.login_page.fill_email('')
+        await self.login_page.fill_email(' ...')
+        # Existing test logic continues...
 
 class TestRuleConfiguration:
-    def __init__(self, driver, locators):
-        self.driver = driver
-        self.locators = locators
-        self.rule_page = RuleConfigurationPage(driver, locators)
+    def __init__(self, page):
+        self.page = page
+        self.rule_page = RuleConfigurationPage(page)
 
-    def test_create_rule_specific_date_balance_threshold_fixed_transfer(self):
-        # Step 2: Navigate to Automated Transfers rule creation interface
-        # (Assume navigation is handled externally or add navigation if needed)
-        # Step 3: Define a specific date trigger for 2024-12-31 at 10:00 AM
-        self.rule_page.select_trigger_type('specific_date')
-        self.rule_page.set_trigger_date('2024-12-31')
-        # Step 4: Add balance threshold condition: balance > $500
-        self.rule_page.click_add_condition()
-        self.rule_page.select_condition_type('balance_threshold')
-        self.rule_page.select_operator('greater_than')
-        self.rule_page.set_balance_threshold('500')
-        # Step 5: Add fixed amount transfer action: transfer $100 to savings account
-        self.rule_page.select_action_type('fixed_transfer')
-        self.rule_page.set_transfer_amount('100')
-        self.rule_page.set_destination_account('SAV-001')
-        # Step 6: Save the complete rule and verify persistence
-        self.rule_page.click_save_rule()
-        success_msg = self.rule_page.get_success_message()
-        assert success_msg is not None and 'successfully' in success_msg
-        # Step 7: Retrieve the saved rule and verify all components (Assume retrieval method or check UI state)
-        # Additional validation can be added as needed
+    async def test_TC_SCRUM_158_001_create_and_verify_rule(self):
+        # Step 1: Navigate to rule creation
+        await self.rule_page.navigate_to_rule_creation()
 
-    def test_create_rule_and_execute_transfer(self):
-        # Step 1: Create a rule with specific date trigger (current date + 1 minute), balance > $300 condition, and transfer $50 action
-        import datetime
-        trigger_date = (datetime.datetime.now() + datetime.timedelta(minutes=1)).strftime('%Y-%m-%d')
-        self.rule_page.select_trigger_type('specific_date')
-        self.rule_page.set_trigger_date(trigger_date)
-        self.rule_page.click_add_condition()
-        self.rule_page.select_condition_type('balance_threshold')
-        self.rule_page.select_operator('greater_than')
-        self.rule_page.set_balance_threshold('300')
-        self.rule_page.select_action_type('fixed_transfer')
-        self.rule_page.set_transfer_amount('50')
-        self.rule_page.set_destination_account('SAV-001')
-        self.rule_page.click_save_rule()
-        success_msg = self.rule_page.get_success_message()
-        assert success_msg is not None and 'successfully' in success_msg
-        # Step 2: Set account balance to $400 (Assume external setup or method)
-        # Step 3: Wait for trigger time and verify rule evaluation (simulate wait)
-        import time
-        time.sleep(65)
-        # Step 4: Verify transfer action execution (Assume method or UI check)
-        # Step 5: Check rule execution log (Assume log retrieval or UI check)
-        # Additional validation can be added as needed
+        # Step 2: Define trigger with specific date
+        trigger_datetime = '2024-12-31T10:00:00Z'
+        await self.rule_page.set_trigger_date(trigger_datetime)
+
+        # Step 3: Add balance threshold condition (> $500)
+        await self.rule_page.add_condition_balance_threshold(500)
+
+        # Step 4: Add fixed transfer action ($100 to SAV-001)
+        await self.rule_page.add_action_fixed_transfer(100, 'SAV-001')
+
+        # Step 5: Save rule
+        rule_id = await self.rule_page.save_rule()
+
+        # Step 6: Retrieve rule
+        rule_data = await self.rule_page.retrieve_rule(rule_id)
+
+        # Step 7: Verify components
+        assert rule_data['trigger']['type'] == 'date'
+        assert rule_data['trigger']['value'] == trigger_datetime
+        assert rule_data['condition']['type'] == 'balance_threshold'
+        assert rule_data['condition']['operator'] == '>'
+        assert rule_data['condition']['value'] == 500
+        assert rule_data['action']['type'] == 'fixed_transfer'
+        assert rule_data['action']['amount'] == 100
+        assert rule_data['action']['destination_account'] == 'SAV-001'
+        # Optional: Validate JSON schema
+        assert await self.rule_page.validate_rule_schema(rule_data)
+
+    async def test_TC_SCRUM_158_002_create_evaluate_and_verify_log(self):
+        # Step 1: Navigate to rule creation
+        await self.rule_page.navigate_to_rule_creation()
+
+        # Step 2: Define trigger with current time + 1min
+        from datetime import datetime, timedelta
+        import pytz
+        now_utc = datetime.now(pytz.UTC)
+        trigger_datetime = (now_utc + timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        await self.rule_page.set_trigger_date(trigger_datetime)
+
+        # Step 3: Add balance threshold condition (> $300)
+        await self.rule_page.add_condition_balance_threshold(300)
+
+        # Step 4: Add fixed transfer action ($50 to SAV-001)
+        await self.rule_page.add_action_fixed_transfer(50, 'SAV-001')
+
+        # Step 5: Save rule
+        rule_id = await self.rule_page.save_rule()
+
+        # Step 6: Retrieve rule
+        rule_data = await self.rule_page.retrieve_rule(rule_id)
+        assert rule_data['trigger']['type'] == 'date'
+        assert rule_data['trigger']['value'] == trigger_datetime
+        assert rule_data['condition']['type'] == 'balance_threshold'
+        assert rule_data['condition']['operator'] == '>'
+        assert rule_data['condition']['value'] == 300
+        assert rule_data['action']['type'] == 'fixed_transfer'
+        assert rule_data['action']['amount'] == 50
+        assert rule_data['action']['destination_account'] == 'SAV-001'
+        assert await self.rule_page.validate_rule_schema(rule_data)
+
+        # Step 7: Update account balance to > $300
+        await self.rule_page.update_account_balance(350)
+
+        # Step 8: Wait for rule evaluation (wait until after trigger time)
+        from time import sleep
+        sleep(70)  # Wait a bit more than 1 minute to ensure trigger
+
+        # Step 9: Verify rule evaluation and action execution
+        execution_log = await self.rule_page.get_execution_log(rule_id)
+        assert execution_log['status'] == 'executed'
+        assert execution_log['triggered_at'] == trigger_datetime
+        assert execution_log['action']['amount'] == 50
+        assert execution_log['action']['destination_account'] == 'SAV-001'
