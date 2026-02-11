@@ -106,3 +106,45 @@ class TestRuleConfiguration:
         self.rule_page.configure_advanced_rule(rule_id, rule_name, trigger_type, interval_value, after_deposit, conditions, actions)
         assert self.rule_page.verify_rule_saved(), 'Rule was not saved successfully.'
         assert 'successfully' in self.rule_page.get_success_message_text().lower()
+
+    # TC_SCRUM158_005: Invalid trigger type rule creation and validation
+    def test_TC_SCRUM158_005(self):
+        # Step 1: Access rule creation interface
+        self.driver.get('/rules/create')
+        assert 'Rule Creation' in self.driver.title or self.rule_page.rule_id_input.is_displayed()
+        # Step 2: Attempt to create rule with trigger_type='invalid_trigger'
+        invalid_rule = {
+            'trigger_type': 'invalid_trigger',
+            'condition_type': 'balance_threshold',
+            'threshold': 500
+        }
+        # Step 3: Submit invalid rule for validation
+        error_message = self.rule_page.submit_invalid_rule(invalid_rule)
+        assert error_message is not None
+        assert 'invalid_trigger' in error_message.lower()
+        # Step 4: Verify rule not created in database
+        assert self.rule_page.verify_rule_not_created('invalid_trigger')
+
+    # TC_SCRUM158_006: Missing required fields in rule creation and validation
+    def test_TC_SCRUM158_006(self):
+        # Step 1: Prepare rule JSON without action_type field
+        incomplete_rule_1 = {
+            'trigger_type': 'after_deposit',
+            'condition_type': 'balance_threshold',
+            'threshold': 500
+        }
+        # Step 2: Submit incomplete rule to validation service
+        error_message_1 = self.rule_page.submit_incomplete_rule(incomplete_rule_1)
+        assert error_message_1 is not None
+        assert 'action_type' in error_message_1.lower()
+        assert 'required' in error_message_1.lower()
+        # Step 4: Attempt to create another rule without trigger_type field
+        incomplete_rule_2 = {
+            'condition_type': 'balance_threshold',
+            'action_type': 'fixed_amount',
+            'amount': 100
+        }
+        error_message_2 = self.rule_page.submit_incomplete_rule(incomplete_rule_2)
+        assert error_message_2 is not None
+        assert 'trigger_type' in error_message_2.lower()
+        assert 'required' in error_message_2.lower()
