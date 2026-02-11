@@ -53,7 +53,6 @@ class RuleConfigurationPage:
     def select_trigger_type(self, trigger_type: str):
         """Select trigger type from dropdown."""
         self.trigger_type_dropdown.click()
-        # Assume dropdown options are visible and selectable by text
         option = self.driver.find_element(By.XPATH, f"//option[contains(text(), '{trigger_type}')]")
         option.click()
 
@@ -86,14 +85,18 @@ class RuleConfigurationPage:
 
     def add_transaction_source_condition(self, source_provider: str):
         """Add transaction source condition."""
-        self.transaction_source_dropdown.click()
-        option = self.driver.find_element(By.XPATH, f"//option[contains(text(), '{source_provider}')]")
+        self.add_condition_btn.click()
+        self.condition_type_dropdown.click()
+        option = self.driver.find_element(By.XPATH, "//option[contains(text(), 'transaction_source')]")
         option.click()
+        self.transaction_source_dropdown.click()
+        source_option = self.driver.find_element(By.XPATH, f"//option[contains(text(), '{source_provider}')]")
+        source_option.click()
 
     def add_fixed_transfer_action(self, amount: float, destination_account: str):
         """Add fixed amount transfer action."""
         self.action_type_dropdown.click()
-        option = self.driver.find_element(By.XPATH, "//option[contains(text(), 'fixed_transfer')]")
+        option = self.driver.find_element(By.XPATH, "//option[contains(text(), 'fixed_amount')]")
         option.click()
         self.transfer_amount_input.clear()
         self.transfer_amount_input.send_keys(str(amount))
@@ -103,7 +106,7 @@ class RuleConfigurationPage:
     def add_percentage_transfer_action(self, percentage: float, destination_account: str):
         """Add percentage transfer action."""
         self.action_type_dropdown.click()
-        option = self.driver.find_element(By.XPATH, "//option[contains(text(), 'percentage_transfer')]")
+        option = self.driver.find_element(By.XPATH, "//option[contains(text(), 'percentage')]")
         option.click()
         self.percentage_input.clear()
         self.percentage_input.send_keys(str(percentage))
