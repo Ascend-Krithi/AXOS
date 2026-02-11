@@ -70,3 +70,39 @@ class TestRuleConfiguration:
         assert schema_valid, 'Schema validation failed'
         success_text = self.rule_page.save_rule()
         assert 'successfully' in success_text.lower()
+
+    def test_TC_SCRUM158_003(self):
+        # Test Case TC_SCRUM158_003: Monthly recurring rule, balance threshold, fixed amount transfer
+        rule_id = 'TC003'
+        rule_name = 'Monthly Recurring Rule'
+        trigger_type = 'Monthly'
+        interval_value = '1'
+        after_deposit = False
+        conditions = [
+            {'type': 'balance_threshold', 'operator': '>', 'value': 1000}
+        ]
+        actions = [
+            {'type': 'fixed_amount', 'amount': 200, 'destination_account': 'ACC123'}
+        ]
+        self.rule_page.configure_advanced_rule(rule_id, rule_name, trigger_type, interval_value, after_deposit, conditions, actions)
+        assert self.rule_page.verify_rule_saved(), 'Rule was not saved successfully.'
+        assert 'successfully' in self.rule_page.get_success_message_text().lower()
+
+    def test_TC_SCRUM158_004(self):
+        # Test Case TC_SCRUM158_004: Advanced rule, multiple conditions, after deposit trigger, multiple actions
+        rule_id = 'TC004'
+        rule_name = 'Advanced Multi-Condition Rule'
+        trigger_type = 'After Deposit'
+        interval_value = '0'
+        after_deposit = True
+        conditions = [
+            {'type': 'balance_threshold', 'operator': '>=', 'value': 5000},
+            {'type': 'transaction_source', 'source_provider': 'Employer Y'}
+        ]
+        actions = [
+            {'type': 'fixed_amount', 'amount': 300, 'destination_account': 'ACC789'},
+            {'type': 'percentage', 'percentage': 15, 'destination_account': 'ACC456'}
+        ]
+        self.rule_page.configure_advanced_rule(rule_id, rule_name, trigger_type, interval_value, after_deposit, conditions, actions)
+        assert self.rule_page.verify_rule_saved(), 'Rule was not saved successfully.'
+        assert 'successfully' in self.rule_page.get_success_message_text().lower()
