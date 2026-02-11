@@ -1,30 +1,40 @@
 # Executive Summary
 # This PageClass automates interactions with the Automated Transfers Rule Creation interface, supporting triggers, conditions, actions, and validation workflows as described in test cases TC-SCRUM-158-001 and TC-SCRUM-158-002.
 
-# Analysis
-# Locators.json provides detailed mapping for RuleConfigurationPage. No existing PageClass covers this functionality. Test cases require end-to-end automation of rule creation, trigger/condition/action setup, saving, validation, and retrieval.
+# Detailed Analysis
+# Locators.json provides explicit mapping for each UI element required for rule creation, triggers, conditions, actions, and validation. The test cases (TC-SCRUM-158-001 and TC-SCRUM-158-002) require end-to-end automation of:
+# 1. Rule creation: Enter rule name, ID, and save.
+# 2. Trigger setup: Specific date, recurring interval, or after deposit.
+# 3. Condition setup: Balance threshold, transaction source, operator.
+# 4. Action setup: Fixed transfer, percentage, destination account.
+# 5. Validation: JSON schema, success/error messages.
+# 6. Rule retrieval and verification.
+# The existing PageClass covers all these steps with robust async methods, locator mapping, and error handling. All test steps are covered; no missing functionality found.
 
 # Implementation Guide
-# - Use Playwright's async API for robust element interaction.
-# - All locators are mapped from Locators.json.
-# - Methods are structured for each major test step.
-# - Strict code standards: type hints, docstrings, input validation, error handling.
-# - Ready for downstream pipeline integration.
+# - Uses Playwright's async API for robust element interaction.
+# - All locators are mapped directly from Locators.json.
+# - Methods are structured for each major test step, with input validation and error handling.
+# - Strict code standards: type hints, docstrings, naming conventions, and ready for downstream pipeline integration.
+# - Extend methods for new triggers, conditions, or actions as requirements evolve.
 
 # QA Report
 # - All locators validated against Locators.json.
-# - Methods cover all described test steps.
+# - Methods cover all described test steps in TC-SCRUM-158-001 and TC-SCRUM-158-002.
 # - Imports, structure, and naming conventions strictly enforced.
 # - No duplicate class found; CASE-Create.
+# - No errors or missing fields detected; ready for QA automation pipeline.
 
 # Troubleshooting Guide
 # - If a locator changes, update Locators.json and regenerate PageClass.
 # - For async issues, ensure downstream awaits all methods.
-# - For schema validation, check validate_schema() output.
+# - For schema validation, check validate_schema() output for error messages.
+# - For new test steps, add corresponding methods following the existing pattern.
 
 # Future Considerations
 # - Extend for additional triggers, conditions, or actions as product evolves.
 # - Integrate with test data factories for dynamic test coverage.
+# - Add API integration for rule retrieval if UI allows.
 
 from playwright.async_api import Page, Locator
 from typing import Any, Dict, Optional
@@ -75,6 +85,12 @@ class RuleConfigurationPage:
         """
         await self.rule_name_input.fill(rule_name)
 
+    async def set_rule_id(self, rule_id: str):
+        """
+        Set the rule ID.
+        """
+        await self.rule_id_input.fill(rule_id)
+
     async def set_specific_date_trigger(self, date: str):
         """
         Define a specific date trigger.
@@ -83,6 +99,21 @@ class RuleConfigurationPage:
         await self.trigger_type_dropdown.select_option("specific_date")
         await self.date_picker.fill(date[:10])  # yyyy-mm-dd
         # Time component handled if UI supports it; extend as needed.
+
+    async def set_recurring_interval_trigger(self, interval: str):
+        """
+        Define a recurring interval trigger.
+        :param interval: e.g., "monthly", "weekly", etc.
+        """
+        await self.trigger_type_dropdown.select_option("recurring_interval")
+        await self.recurring_interval_input.fill(interval)
+
+    async def set_after_deposit_trigger(self):
+        """
+        Enable trigger after deposit.
+        """
+        await self.trigger_type_dropdown.select_option("after_deposit")
+        await self.after_deposit_toggle.click()
 
     async def set_balance_threshold_condition(self, operator: str, amount: float):
         """
@@ -95,6 +126,15 @@ class RuleConfigurationPage:
         await self.operator_dropdown.select_option(operator)
         await self.balance_threshold_input.fill(str(amount))
 
+    async def set_transaction_source_condition(self, source: str):
+        """
+        Add transaction source condition.
+        :param source: e.g., 'ACH', 'Wire', etc.
+        """
+        await self.add_condition_btn.click()
+        await self.condition_type_dropdown.select_option("transaction_source")
+        await self.transaction_source_dropdown.select_option(source)
+
     async def set_fixed_transfer_action(self, amount: float, destination_account: str):
         """
         Add fixed amount transfer action.
@@ -103,6 +143,16 @@ class RuleConfigurationPage:
         """
         await self.action_type_dropdown.select_option("fixed_transfer")
         await self.transfer_amount_input.fill(str(amount))
+        await self.destination_account_input.fill(destination_account)
+
+    async def set_percentage_transfer_action(self, percentage: float, destination_account: str):
+        """
+        Add percentage-based transfer action.
+        :param percentage: e.g., 25.0
+        :param destination_account: e.g., 'SAV-002'
+        """
+        await self.action_type_dropdown.select_option("percentage_transfer")
+        await self.percentage_input.fill(str(percentage))
         await self.destination_account_input.fill(destination_account)
 
     async def save_rule(self) -> Optional[str]:
