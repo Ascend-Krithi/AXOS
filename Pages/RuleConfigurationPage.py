@@ -1,7 +1,7 @@
 # RuleConfigurationPage.py
 """
 Selenium PageClass for Automated Transfers Rule Configuration Page.
-Covers rule form, triggers, conditions, actions, and validation logic per Locators.json.
+Covers rule form, triggers, conditions, actions, and validation logic.
 """
 
 from selenium.webdriver.common.by import By
@@ -113,13 +113,18 @@ class RuleConfigurationPage:
         self.destination_account_input.clear()
         self.destination_account_input.send_keys(destination_account)
 
+    def enter_json_schema(self, schema: str):
+        """Enter JSON schema in the editor."""
+        self.json_schema_editor.clear()
+        self.json_schema_editor.send_keys(schema)
+
     def validate_json_schema(self):
         """Click validate schema button and check for success/error messages."""
         self.validate_schema_btn.click()
         try:
             self.wait.until(EC.visibility_of(self.success_message))
             return True
-        except:
+        except Exception:
             return False
 
     def get_schema_error_message(self):
@@ -133,3 +138,21 @@ class RuleConfigurationPage:
         self.save_rule_button.click()
         self.wait.until(EC.visibility_of(self.success_message))
         return self.success_message.text
+
+    def simulate_deposit(self, source: str, amount: float):
+        """
+        Simulate deposit for trigger validation (for test automation only).
+        Args:
+            source (str): Deposit source (e.g., 'Employer Y')
+            amount (float): Deposit amount
+        """
+        # This is a stub for test automation; implementation depends on test environment.
+        pass
+
+    def get_rule_id(self):
+        """Retrieve generated rule ID after creation."""
+        return self.rule_id_input.get_attribute('value')
+
+    def is_success_message_displayed(self):
+        """Check if success message is displayed."""
+        return self.success_message.is_displayed()
