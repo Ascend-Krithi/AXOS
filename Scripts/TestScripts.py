@@ -48,3 +48,44 @@ class TestLoginFunctionality:
         settings_page.verify_password_changed()
         # Step 6: Check rule execution log
         # (Assume log verification)
+
+    # TC-SCRUM-158-001: Automated Transfers Rule Creation (Selenium PageClass Implementation)
+    def test_TC_SCRUM_158_001_rule_creation(self):
+        """
+        Automated test for TC-SCRUM-158-001:
+        - Navigate to Automated Transfers rule creation interface
+        - Define specific date trigger for 2024-12-31 at 10:00 AM
+        - Add balance threshold condition: balance > $500
+        - Add fixed amount transfer action: transfer $100 to savings account
+        - Save the rule and verify persistence
+        - Retrieve the saved rule and verify all components
+        """
+        from Pages.RuleConfigurationPage import RuleConfigurationPage
+
+        rule_page = RuleConfigurationPage(self.page.driver)
+
+        # Step 2: Navigate to Automated Transfers rule creation interface
+        rule_page.navigate_to_rule_creation()
+
+        # Step 3: Define specific date trigger
+        rule_page.set_specific_date_trigger("2024-12-31T10:00:00Z")
+
+        # Step 4: Add balance threshold condition
+        rule_page.add_balance_threshold_condition(operator="greater_than", amount=500, currency="USD")
+
+        # Step 5: Add fixed amount transfer action
+        rule_page.add_fixed_transfer_action(amount=100, currency="USD", destination_account="SAV-001")
+
+        # Step 6: Save rule and verify Rule ID
+        rule_id = rule_page.save_rule()
+        assert rule_id is not None and rule_id.startswith("RULE-"), f"Rule ID not returned or invalid: {rule_id}"
+
+        # Step 7: Retrieve the saved rule and verify all components
+        rule_text = rule_page.retrieve_rule(rule_id)
+        assert "specific_date" in rule_text
+        assert "balance_threshold" in rule_text
+        assert "fixed_transfer" in rule_text
+        assert "2024-12-31" in rule_text
+        assert "500" in rule_text
+        assert "100" in rule_text
+        assert "SAV-001" in rule_text
