@@ -16,57 +16,59 @@ class TestLoginFunctionality:
         await self.login_page.fill_email('')
 
 class TestBillPayFunctionality:
-    def __init__(self, driver):
-        self.bill_pay_page = BillPayPage(driver)
+    def __init__(self, driver, locators):
+        self.bill_pay_page = BillPayPage(driver, locators)
 
     def test_tc_bp_001(self):
-        # Step 2: Navigate to Bill Pay section
-        self.bill_pay_page.navigate_to_bill_pay()
-        # Step 3: Enter valid payee name
-        self.bill_pay_page.fill_payee_information(
-            name="Electric Company",
+        # Step 1: Navigate to Bill Pay section
+        self.bill_pay_page.go_to_bill_pay()
+        # Step 2: Enter valid payee details
+        self.bill_pay_page.fill_payee_details(
+            payee_name="Electric Company",
             address="123 Main St",
             city="Springfield",
             state="IL",
             zip_code="62701",
             phone="555-123-4567"
         )
-        # Step 6: Enter account number and verify
+        # Step 3: Enter account number and verify
         self.bill_pay_page.fill_account_details("12345", "12345")
-        # Step 7: Enter payment amount
-        self.bill_pay_page.enter_amount(150.00)
-        # Step 8: Select source account
-        self.bill_pay_page.select_from_account("13344")
-        # Step 9: Click Send Payment and verify confirmation
+        # Step 4: Enter payment amount
+        self.bill_pay_page.fill_payment_amount(150.00)
+        # Step 5: Select source account
+        self.bill_pay_page.select_source_account("13344")
+        # Step 6: Submit payment
         self.bill_pay_page.submit_payment()
-        assert self.bill_pay_page.verify_payment_success()
+        # Step 7: Verify confirmation
+        assert self.bill_pay_page.is_confirmation_displayed(), "Confirmation page not displayed"
         confirmation = self.bill_pay_page.get_confirmation_details()
-        assert confirmation['payee_name'] == "Electric Company"
+        assert confirmation['payeeName'] == "Electric Company"
         assert confirmation['amount'] == "$150.00"
-        assert confirmation['from_account'] == "13344"
+        assert confirmation['fromAccount'] == "13344"
 
     def test_tc_bp_002(self):
-        # Step 2: Navigate to Bill Pay section
-        self.bill_pay_page.navigate_to_bill_pay()
-        # Step 3: Fill all mandatory fields
-        self.bill_pay_page.fill_payee_information(
-            name="Water Utility",
+        # Step 1: Navigate to Bill Pay section
+        self.bill_pay_page.go_to_bill_pay()
+        # Step 2: Enter valid payee details
+        self.bill_pay_page.fill_payee_details(
+            payee_name="Water Utility",
             address="456 Oak Ave",
             city="Chicago",
             state="IL",
             zip_code="60601",
             phone="555-987-6543"
         )
-        # Step 6: Enter account number and verify
+        # Step 3: Enter account number and verify
         self.bill_pay_page.fill_account_details("67890", "67890")
-        # Step 4: Enter minimum amount
-        self.bill_pay_page.enter_amount(0.01)
-        # Step 5: Select account
-        self.bill_pay_page.select_from_account("13344")
-        # Step 6: Submit payment and verify confirmation
+        # Step 4: Enter minimum valid amount
+        self.bill_pay_page.fill_payment_amount(0.01)
+        # Step 5: Select account with sufficient balance
+        self.bill_pay_page.select_source_account("13344")
+        # Step 6: Submit payment
         self.bill_pay_page.submit_payment()
-        assert self.bill_pay_page.verify_payment_success()
+        # Step 7: Verify confirmation
+        assert self.bill_pay_page.is_confirmation_displayed(), "Confirmation page not displayed"
         confirmation = self.bill_pay_page.get_confirmation_details()
-        assert confirmation['payee_name'] == "Water Utility"
+        assert confirmation['payeeName'] == "Water Utility"
         assert confirmation['amount'] == "$0.01"
-        assert confirmation['from_account'] == "13344"
+        assert confirmation['fromAccount'] == "13344"
