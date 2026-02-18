@@ -1,15 +1,1 @@
-{Import necessary modules}
-
-class TestLoginFunctionality:
-    def __init__(self, page):
-        self.page = page
-        self.login_page = LoginPage(page)
-
-    async def test_empty_fields_validation(self):
-        await self.login_page.navigate()
-        await self.login_page.submit_login('', '')
-        assert await self.login_page.get_error_message() == 'Mandatory fields are required'
-
-    async def test_remember_me_functionality(self):
-        await self.login_page.navigate()
-        await self.login_page.fill_email('
+{Import necessary modules}\n\nclass TestLoginFunctionality:\n    def __init__(self, page):\n        self.page = page\n        self.login_page = LoginPage(page)\n\n    async def test_empty_fields_validation(self):\n        await self.login_page.navigate()\n        await self.login_page.submit_login('', '')\n        assert await self.login_page.get_error_message() == 'Mandatory fields are required'\n\n    async def test_remember_me_functionality(self):\n        await self.login_page.navigate()\n        await self.login_page.fill_email('
