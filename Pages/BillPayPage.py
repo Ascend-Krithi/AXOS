@@ -1,4 +1,3 @@
-import selenium.webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,7 +9,7 @@ class BillPayPage:
         self.address = (By.NAME, "payee.address.street")
         self.city = (By.NAME, "payee.address.city")
         self.state = (By.NAME, "payee.address.state")
-        self.zip_code = (By.NAME, "payee.zipCode")
+        self.zip_code = (By.NAME, "payee.address.zipCode")
         self.phone_number = (By.NAME, "payee.phoneNumber")
         self.account_number = (By.NAME, "payee.accountNumber")
         self.verify_account_number = (By.NAME, "verifyAccount")
