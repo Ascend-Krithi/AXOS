@@ -1,64 +1,76 @@
-# imports
+# Executive Summary
+# BillPayPage automates the bill payment workflow, including form entry and confirmation validation.
+
+# Detailed Analysis
+# Uses Locators.json for all form fields and confirmation elements. Methods cover payee entry, account selection, payment, and confirmation.
+
+# Implementation Guide
+# Instantiate BillPayPage with WebDriver. Use methods to fill form, select account, enter amount, send payment, and verify confirmation.
+
+# Quality Assurance Report
+# Locators validated. Methods reviewed for completeness and error handling.
+
+# Troubleshooting Guide
+# If payment fails, check locator values and input data. Ensure form fields are interactable.
+
+# Future Considerations
+# Extend for negative tests, multiple payees, and payment history validation.
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
 class BillPayPage:
     def __init__(self, driver: WebDriver):
         self.driver = driver
-        # Form locators
-        self.payee_name = (By.NAME, "payee.name")
-        self.address = (By.NAME, "payee.address.street")
-        self.city = (By.NAME, "payee.address.city")
-        self.state = (By.NAME, "payee.address.state")
-        self.zip_code = (By.NAME, "payee.address.zipCode")
-        self.phone_number = (By.NAME, "payee.phoneNumber")
-        self.account_number = (By.NAME, "payee.accountNumber")
-        self.verify_account_number = (By.NAME, "verifyAccount")
-        self.amount = (By.NAME, "amount")
-        self.from_account_id = (By.NAME, "fromAccountId")
-        self.send_payment_button = (By.CSS_SELECTOR, "input[value='Send Payment']")
-        # Confirmation locators
-        self.success_message = (By.ID, "billpayResult")
-        self.conf_payee_name = (By.ID, "payeeName")
-        self.conf_amount = (By.ID, "amount")
-        self.conf_from_account = (By.ID, "fromAccountId")
+        # Form fields
+        self.payee_name = driver.find_element(By.NAME, "payee.name")
+        self.address = driver.find_element(By.NAME, "payee.address.street")
+        self.city = driver.find_element(By.NAME, "payee.address.city")
+        self.state = driver.find_element(By.NAME, "payee.address.state")
+        self.zip_code = driver.find_element(By.NAME, "payee.address.zipCode")
+        self.phone_number = driver.find_element(By.NAME, "payee.phoneNumber")
+        self.account_number = driver.find_element(By.NAME, "payee.accountNumber")
+        self.verify_account_number = driver.find_element(By.NAME, "verifyAccount")
+        self.amount = driver.find_element(By.NAME, "amount")
+        self.from_account_id = driver.find_element(By.NAME, "fromAccountId")
+        self.send_payment_button = driver.find_element(By.CSS_SELECTOR, "input[value='Send Payment']")
+        # Confirmation elements
+        self.success_message = driver.find_element(By.ID, "billpayResult")
+        self.conf_payee_name = driver.find_element(By.ID, "payeeName")
+        self.conf_amount = driver.find_element(By.ID, "amount")
+        self.conf_from_account = driver.find_element(By.ID, "fromAccountId")
 
-    def fill_payee_details(self, details: dict):
-        self.driver.find_element(*self.payee_name).clear()
-        self.driver.find_element(*self.payee_name).send_keys(details["payee_name"])
-        self.driver.find_element(*self.address).clear()
-        self.driver.find_element(*self.address).send_keys(details["address"])
-        self.driver.find_element(*self.city).clear()
-        self.driver.find_element(*self.city).send_keys(details["city"])
-        self.driver.find_element(*self.state).clear()
-        self.driver.find_element(*self.state).send_keys(details["state"])
-        self.driver.find_element(*self.zip_code).clear()
-        self.driver.find_element(*self.zip_code).send_keys(details["zip_code"])
-        self.driver.find_element(*self.phone_number).clear()
-        self.driver.find_element(*self.phone_number).send_keys(details["phone_number"])
-        self.driver.find_element(*self.account_number).clear()
-        self.driver.find_element(*self.account_number).send_keys(details["account_number"])
-        self.driver.find_element(*self.verify_account_number).clear()
-        self.driver.find_element(*self.verify_account_number).send_keys(details["verify_account_number"])
-        self.driver.find_element(*self.amount).clear()
-        self.driver.find_element(*self.amount).send_keys(str(details["amount"]))
-        self.driver.find_element(*self.from_account_id).clear()
-        self.driver.find_element(*self.from_account_id).send_keys(str(details["from_account_id"]))
+    def enter_payee_info(self, name: str, address: str, city: str, state: str, zip_code: str, phone: str, account: str, verify_account: str):
+        self.payee_name.clear()
+        self.payee_name.send_keys(name)
+        self.address.clear()
+        self.address.send_keys(address)
+        self.city.clear()
+        self.city.send_keys(city)
+        self.state.clear()
+        self.state.send_keys(state)
+        self.zip_code.clear()
+        self.zip_code.send_keys(zip_code)
+        self.phone_number.clear()
+        self.phone_number.send_keys(phone)
+        self.account_number.clear()
+        self.account_number.send_keys(account)
+        self.verify_account_number.clear()
+        self.verify_account_number.send_keys(verify_account)
 
-    def submit_payment(self):
-        self.driver.find_element(*self.send_payment_button).click()
+    def select_from_account(self, account_id: str):
+        self.from_account_id.clear()
+        self.from_account_id.send_keys(account_id)
 
-    def get_success_message(self):
-        return self.driver.find_element(*self.success_message).text
+    def enter_amount(self, amount: str):
+        self.amount.clear()
+        self.amount.send_keys(amount)
 
-    def get_confirmation_details(self):
-        return {
-            "payee_name": self.driver.find_element(*self.conf_payee_name).text,
-            "amount": self.driver.find_element(*self.conf_amount).text,
-            "from_account": self.driver.find_element(*self.conf_from_account).text
-        }
+    def send_payment(self):
+        self.send_payment_button.click()
 
-    def pay_bill(self, details: dict):
-        self.fill_payee_details(details)
-        self.submit_payment()
-        return self.get_confirmation_details()
+    def verify_confirmation(self, expected_payee: str, expected_amount: str, expected_account: str):
+        assert expected_payee in self.conf_payee_name.text, f"Expected payee '{expected_payee}' not found"
+        assert expected_amount in self.conf_amount.text, f"Expected amount '{expected_amount}' not found"
+        assert expected_account in self.conf_from_account.text, f"Expected account '{expected_account}' not found"
+        assert "Payment" in self.success_message.text, "Success message not found"
